@@ -1,0 +1,82 @@
+body {
+    overflow: hidden;
+}
+
+hr { flex-basis: 100%; height: 0; margin: 0; border: 0; }
+
+:root {
+    --lens-radius: 100px;
+    --lens-border: 1px;
+    --lens-left: 30px;
+    --lens-top: 40px;
+    --mouse-page-x: 0px;
+    --mouse-page-y: 0px;
+}
+
+#before {
+    color: darkred;
+    grid-row: 2 / 4;
+    grid-column: 2 / 5;
+    position: relative;
+    display: flex;
+    flex-flow: wrap;
+    justify-content: space-between;
+    align-content: space-between;
+    background-color: rgba(255, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+#before-container {
+    position: absolute;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: repeat(5, 1fr);
+    grid-template-columns: repeat(7, 1fr);
+    height: 60vh;
+    width: 60vw;
+    top: 80px;
+    left: 70px;
+    background-color: bisque;
+    border: 1px black;
+}
+
+#after {
+    color: lightblue;
+    position: absolute;
+    display: flex;
+    flex-flow: wrap;
+    justify-content: space-between;
+    align-content: space-between;
+    background-color: rgba(0, 0, 255, 0.5);
+    margin-top: calc(-1*(var(--mouse-page-y) - var(--lens-radius)));
+    margin-left: calc(-1*(var(--mouse-page-x) - var(--lens-radius)));
+}   
+
+.lens {
+    margin: auto;
+    position: absolute;
+    top: var(--lens-top);
+    left: var(--lens-left);
+    width: calc(2*var(--lens-radius));
+    height: calc(2*var(--lens-radius));
+    border-radius: calc(infinity*1px);
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.lens-shadow {
+    color: aquamarine;
+    margin: calc(-1*var(--lens-border));
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    top: var(--lens-top); left: var(--lens-left);
+    width: calc(2*var(--lens-radius));
+    height: calc(2*var(--lens-radius));
+    border-radius: calc(infinity*1px);
+    box-shadow: inset 10px 10px 19px -4px rgba(0,0,0,0.65);
+    border: var(--lens-border) solid #fffbe7;
+    pointer-events: none;
+    overflow: hidden;
+  }
