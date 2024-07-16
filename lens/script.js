@@ -19,11 +19,12 @@ document.addEventListener('mousemove', e=> {
     // Set lens radius
     const lensRadius = parseInt(getComputedStyle(root).getPropertyValue('--lens-radius'));
     
-    const mainContent = document.getElementById('before').getBoundingClientRect();
-    // Replace with this if lens placed outside content element: const mainContentParentRect = document.getElementById('before').parentElement.getBoundingClientRect();
+    // const content = document.getElementById('lens-outside').getBoundingClientRect();
+    const content = document.getElementById('lens-outside').parentElement.getBoundingClientRect()
+    // Replace with this if lens placed outside content element: const mainContentParentRect = document.getElementById('lens-outside').parentElement.getBoundingClientRect();
 
-    const contentTop = mainContent.top
-    const contentLeft = mainContent.left
+    const contentTop = content.top
+    const contentLeft = content.left
 
     const lensTop = pageY - lensRadius - contentTop;
     const lensLeft = pageX - lensRadius - contentLeft;
@@ -41,8 +42,8 @@ document.addEventListener('mousemove', e=> {
 
 
 domReady(() => {
-    const mainContent = document.getElementById('before');
-    const lensContent = document.getElementById('after');
+    const mainContent = document.getElementById('lens-outside');
+    const lensContent = document.getElementById('lens-inside');
     const positionInfo = mainContent.getBoundingClientRect();
     const top = positionInfo.top;
     const left = positionInfo.left;
@@ -63,8 +64,8 @@ var lensContentResizer = new ResizeObserver(entries => {
 });
 
 const updateLensContent = () => {
-    const mainContentElement = document.getElementById('before');
-    const lensContentElement = document.getElementById('after');
+    const mainContentElement = document.getElementById('lens-outside');
+    const lensContentElement = document.getElementById('lens-inside');
     const mainRect = mainContentElement.getBoundingClientRect();
     const top = mainRect.top;
     const left = mainRect.left;
