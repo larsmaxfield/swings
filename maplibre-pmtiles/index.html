@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>PMTiles source and protocol</title>
+    <meta property="og:description" content="Uses the PMTiles plugin and protocol to present a map." />
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css' />
+    <script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script>
+    <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        html, body, #map { height: 100%; }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+
+    // Constants
+    const terrainExaggeration = 5.0;
+    const terrainEncoding = "custom";
+    const interval = 1.0;  // Amazon Terrarium 1.0
+    const baseShift = 0.0;  // Amazon Terrarium 32768.0 (2^15)
+    const redFactor = 256.0*256.0*interval;  //  Amazon Terrarium 256*
+    const greenFactor = 256.0*interval;  //  Amazon Terrarium 1*
+    const blueFactor = interval;  //  Amazon Terrarium /256
+
+    // add the PMTiles plugin to the maplibregl global.
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol('pmtiles', protocol.tile);
+
+    const PMTILES_URL_RGB = './rgb.pmtiles';
+    const PMTILES_URL_TERRAIN = './terrain.pmtiles';
+
+    const pr = new pmtiles.PMTiles(PMTILES_URL_RGB);
+    const pt = new pmtiles.PMTiles(PMTILES_URL_TERRAIN);
+
+    protocol.add(pr);
+    protocol.add(pt);
+
+    const hm = [
+        pr.getHeader(),
+        pr.getMetadata(),
+        pt.getHeader(),
+        pt.getMetadata(),
+    ];
+
+    Promise.all(hm).then((values) => {
+        values.forEach((value) => console.log(value));
+
+        const r_h = values[0];
+        const r_m = values[1];
+        const t_h = values[2];
+        const t_m = values[3];
+
+        const overZoom = 2;
+        const maxZoom = Math.max(r_h.maxZoom, t_h.maxZoom) + overZoom;
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            zoom: 0,
+            center: [0, 0],
+            hash: true,
+            maxZoom: maxZoom,  // Max zoom + overzoom
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    'rgb_source': {
+                        type: 'raster',
+                        url: `pmtiles://${PMTILES_URL_RGB}`,
+                        attribution: r_m.attribution + ' · ' + t_m.attribution,
+                    },
+                    'terrain_source': {
+                        type: 'raster-dem',
+                        url: `pmtiles://${PMTILES_URL_TERRAIN}`,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    'hillshade_source': {
+                        type: 'raster-dem',
+                        url: `pmtiles://${PMTILES_URL_TERRAIN}`,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                },
+                layers: [
+                    {
+                        'id': 'raster',
+                        'type': 'raster',
+                        'source': 'rgb_source',
+                    },
+                    {
+                        'id': 'hills',
+                        'type': 'hillshade',
+                        'source': 'hillshade_source',
+                        'paint': {
+                            'hillshade-exaggeration': 1.0,
+                            'hillshade-illumination-anchor': 'map',
+                        }
+                    },
+                ],
+                terrain: {
+                    source: 'terrain_source',
+                    exaggeration: terrainExaggeration,
+                },
+            }
+        });
+
+        map.showTileBoundaries = true
+
+        map.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+
+        map.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrain_source',
+                exaggeration: terrainExaggeration,
+            })
+        );
+    });
+
+</script>
+</body>
+</html>

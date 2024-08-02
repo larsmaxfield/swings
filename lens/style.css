@@ -2,6 +2,14 @@ body {
     overflow: hidden;
 }
 
+body * {
+    -webkit-touch-callout: none;
+      -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+              user-select: none;
+}
+
 hr { flex-basis: 100%; height: 0; margin: 0; border: 0; }
 
 :root {
@@ -13,43 +21,65 @@ hr { flex-basis: 100%; height: 0; margin: 0; border: 0; }
     --mouse-page-y: 0px;
 }
 
-#before {
-    color: darkred;
-    grid-row: 2 / 4;
-    grid-column: 2 / 5;
-    position: relative;
-    display: flex;
-    flex-flow: wrap;
-    justify-content: space-between;
-    align-content: space-between;
-    background-color: rgba(255, 0, 0, 0.5);
-    overflow: hidden;
-}
-
-#before-container {
+#external-container-example {
     position: absolute;
     overflow: hidden;
     display: grid;
     grid-template-rows: repeat(5, 1fr);
     grid-template-columns: repeat(7, 1fr);
-    height: 60vh;
-    width: 60vw;
-    top: 80px;
-    left: 70px;
+    height: 70vh;
+    top: 5vh;
+    left: 8vw;
+    right: 20vw;
     background-color: bisque;
+    background-image:
+      repeating-linear-gradient(#ccc 0 1px, transparent 1px 100%),
+      repeating-linear-gradient(90deg, #ccc 0 1px, transparent 1px 100%);
+    background-size: calc(100%*calc(1/7)) calc(100%*calc(1/5));
     border: 1px black;
 }
 
-#after {
-    color: lightblue;
+#lens-container {
+    position: relative;
+    overflow: hidden;
+    grid-row: 2 / 4;
+    grid-column: 2 / 5;
+    background-color: rgb(152, 152, 152);
+}
+
+#lens-outside {
+    overflow: hidden;
+    position: relative;
+    pointer-events: none; /* none when inside content driving \ */
+}
+
+.outside-content-example {
+    overflow: hidden;
+    color: darkred;
+    display: flex;
+    flex-flow: wrap;
+    justify-content: space-between;
+    align-content: space-between;
+    background-color: rgba(255, 0, 0, 0.5);
+}
+
+/* Position and size are calculated for inside content; do not define height, width, top, left, etc. */
+#lens-inside {
+    overflow: hidden;
     position: absolute;
+    margin-top: calc(-1*(var(--mouse-page-y) - var(--lens-radius)));
+    margin-left: calc(-1*(var(--mouse-page-x) - var(--lens-radius)));
+    /* pointer-events: none; */ /* none when outside content driving \ */
+}   
+
+.inside-content-example {
+    overflow: hidden;
+    color: lightblue;
     display: flex;
     flex-flow: wrap;
     justify-content: space-between;
     align-content: space-between;
     background-color: rgba(0, 0, 255, 0.5);
-    margin-top: calc(-1*(var(--mouse-page-y) - var(--lens-radius)));
-    margin-left: calc(-1*(var(--mouse-page-x) - var(--lens-radius)));
 }   
 
 .lens {
@@ -61,7 +91,7 @@ hr { flex-basis: 100%; height: 0; margin: 0; border: 0; }
     height: calc(2*var(--lens-radius));
     border-radius: calc(infinity*1px);
     overflow: hidden;
-    pointer-events: none;
+    /* pointer-events: none; */ /* none when outside content driving \ */
 }
 
 .lens-shadow {
@@ -78,5 +108,4 @@ hr { flex-basis: 100%; height: 0; margin: 0; border: 0; }
     box-shadow: inset 10px 10px 19px -4px rgba(0,0,0,0.65);
     border: var(--lens-border) solid #fffbe7;
     pointer-events: none;
-    overflow: hidden;
   }
