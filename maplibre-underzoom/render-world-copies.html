@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Unbounded render world copies</title>
+    <meta property="og:description" content="Toggle between rendering a single world and multiple copies of the world using setRenderWorldCopies." />
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel='stylesheet' href='./maplibre-gl.css' />
+    <script src='./maplibre-gl.js'></script>
+    <style>
+        body { margin: 0; padding: 0; background-color: lightgreen; }
+        html, body, #map { height: 100%; }
+    </style>
+</head>
+<body>
+<style>
+    #menu {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: #fff;
+        padding: 10px;
+        font-family: 'Open Sans', sans-serif;
+    }
+</style>
+
+<div id="map"></div>
+<div id="menu">
+    <div>Set <code>renderWorldCopies</code> to:</div>
+    <div>
+        <input type="radio" id="true" name="rtoggle" value="true" />
+        <label for="true">true</label>
+    </div>
+    <div>
+        <input type="radio" id="false" name="rtoggle" value="false" checked />
+        <label for="false">false (allows underzoom)</label>
+    </div>
+</div>
+
+<script>
+    const map = new maplibregl.Map({
+        container: 'map', // container id
+        style:
+            'https://api.maptiler.com/maps/streets/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL', // stylesheet location
+        center: [0, 0], // starting position [lng, lat]
+        zoom: 0.01, // starting zoom
+        renderWorldCopies: false,
+    });
+
+    // World bounds
+    const north = 85.0511287798066;
+    const east = 180;
+    const south = -85.05112877980659;
+    const west = -180;
+
+    map.on('load', () => {
+        map.addSource('bounds', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': [
+                        [west, south],
+                        [west, north],
+                        [east, north],
+                        [east, south],
+                        [west, south],
+                    ]
+                }
+            }
+        });
+        map.addLayer({
+            'id': 'bounds',
+            'type': 'line',
+            'source': 'bounds',
+            'layout': {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            'paint': {
+                'line-color': '#ff0000',
+                'line-width': 8,
+            }
+        });
+    });
+
+    const renderOptions = document.getElementById('menu');
+    const inputs = renderOptions.getElementsByTagName('input');
+
+    function switchRenderOption(option) {
+        const status = option.target.id;
+        map.setRenderWorldCopies(status === 'true');
+        map.panTo(map.getCenter());
+    }
+
+    for (let i = 0; i < inputs.length; i++) {
+        inputs[i].onclick = switchRenderOption;
+    }
+</script>
+</body>
+</html>
