@@ -1,0 +1,61 @@
+body {
+    overflow: hidden;
+}
+
+body * {
+    -webkit-touch-callout: none;
+      -webkit-user-select: none;
+         -moz-user-select: none;
+          -ms-user-select: none;
+              user-select: none;
+}
+
+/* Assume tall */
+.maps {
+    container: maps / size;
+    display: flex;
+    position: absolute;
+    height: 70vh;
+    top: 5vh;
+    left: 8vw;
+    right: 20vw;
+    background-color: bisque;
+    background-image:
+      repeating-linear-gradient(#ccc 0 1px, transparent 1px 100%),
+      repeating-linear-gradient(90deg, #ccc 0 1px, transparent 1px 100%);
+    background-size: calc(100%*calc(1/2)) calc(100%*calc(1/2));
+    border: 1px black;
+}
+
+.maps-grid {
+    display: grid;
+    grid-auto-flow: row;
+    width: 100%;
+}
+
+.map {
+    color: whitesmoke;
+    margin: 0;
+    /* width: 100%'' */
+}
+
+#map1 {
+    background-color: darkorange;
+}
+
+#map2 {
+    background-color: whitesmoke;
+}
+
+#map3 {
+    background-color: darkorchid;
+}
+
+/* If things go wide... */
+@container maps (min-aspect-ratio: 4 / 3) {
+
+    .maps-grid {
+        grid-auto-flow: column;
+    }
+
+}
