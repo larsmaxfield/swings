@@ -53,7 +53,24 @@
         center: [(west+east)/2, (north+south)/2],
         maxBounds: bounds, // Sets bounds as max
         renderWorldCopies: false,
-        style: 'https://api.maptiler.com/maps/streets/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL',
+        style: {
+            version: 8,
+            sources: {
+                rgb: {
+                    type: 'raster',
+                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    maxzoom: 19
+                },
+            },
+            layers: [
+                {
+                    id: 'rgb',
+                    type: 'raster',
+                    source: 'rgb'
+                },
+            ]
+        },
     });
 
     map.addControl(

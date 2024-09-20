@@ -55,7 +55,24 @@
         center: [0, 0], // starting position [lng, lat]
         zoom: -2, // starting zoom
         renderWorldCopies: false,
-        style: 'https://api.maptiler.com/maps/streets/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL',
+        style: {
+            version: 8,
+            sources: {
+                rgb: {
+                    type: 'raster',
+                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    maxzoom: 19
+                },
+            },
+            layers: [
+                {
+                    id: 'rgb',
+                    type: 'raster',
+                    source: 'rgb'
+                },
+            ]
+        },
     });
 
     map.addControl(
