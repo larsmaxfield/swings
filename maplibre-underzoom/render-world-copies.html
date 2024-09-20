@@ -8,7 +8,19 @@
     <link rel='stylesheet' href='./maplibre-gl.css' />
     <script src='./maplibre-gl.js'></script>
     <style>
-        body { margin: 0; padding: 0; background-color: lightgreen; }
+        :root {
+            --checker-dark: #3e3e3e;
+            --checker-light: #4d4d4d;
+            --checker-size: 40px;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--checker-light);
+            background-image: linear-gradient(45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(-45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--checker-dark) 75%), linear-gradient(-45deg, transparent 75%, var(--checker-dark) 75%);
+            background-size: var(--checker-size) var(--checker-size);
+            background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+        }
         html, body, #map { height: 100%; }
     </style>
 </head>
@@ -38,68 +50,12 @@
 </div>
 
 <script>
-    const terrainEncoding = "custom";
-    const interval = 1.0;  // Amazon Terrarium 1.0
-    const baseShift = 32768.0;  // Amazon Terrarium 32768.0 (2^15)
-    const redFactor = 256.0*interval;  //  Amazon Terrarium 256*
-    const greenFactor = interval;  //  Amazon Terrarium 1*
-    const blueFactor = interval/256.0;  //  Amazon Terrarium /256
-
     const map = new maplibregl.Map({
         container: 'map',
         center: [0, 0], // starting position [lng, lat]
         zoom: -2, // starting zoom
         renderWorldCopies: false,
-        style: {
-            version: 8,
-            sources: {
-                rgb: {
-                    type: 'raster',
-                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
-                    tileSize: 256,
-                    maxzoom: 19
-                },
-                // Use a different source for terrain and hillshade layers, to improve render quality
-                terrainSource: {
-                    type: 'raster-dem',
-                    url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
-                    tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
-                    tileSize: 256,
-                    encoding: terrainEncoding,
-                    redFactor: redFactor,
-                    greenFactor: greenFactor,
-                    blueFactor: blueFactor,
-                    baseShift: baseShift,
-                },
-                hillshadeSource: {
-                    type: 'raster-dem',
-                    url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
-                    tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
-                    tileSize: 256,
-                    encoding: terrainEncoding,
-                    redFactor: redFactor,
-                    greenFactor: greenFactor,
-                    blueFactor: blueFactor,
-                    baseShift: baseShift,
-                },
-            },
-            layers: [
-                {
-                    id: 'rgb',
-                    type: 'raster',
-                    source: 'rgb'
-                },
-                {
-                    id: 'hills',
-                    type: 'hillshade',
-                    source: 'hillshadeSource',
-                }
-            ],
-            terrain: {
-                source: 'terrainSource',
-                exaggeration: 1
-            },
-        },
+        style: 'https://api.maptiler.com/maps/streets/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL',
     });
 
     map.addControl(
@@ -111,52 +67,11 @@
         "bottom-left"
     );
 
-    map.addControl(
-        new maplibregl.TerrainControl({
-            source: 'terrainSource',
-            exaggeration: 1,
-        }),
-        "bottom-left"
-    );
-
     // World bounds
     const north = 85.0511287798066;
     const east = 180;
     const south = -85.05112877980659;
     const west = -180;
-
-    map.on('load', () => {
-        map.addSource('bounds', {
-            'type': 'geojson',
-            'data': {
-                'type': 'Feature',
-                'properties': {},
-                'geometry': {
-                    'type': 'LineString',
-                    'coordinates': [
-                        [west, south],
-                        [west, north],
-                        [east, north],
-                        [east, south],
-                        [west, south],
-                    ]
-                }
-            }
-        });
-        map.addLayer({
-            'id': 'bounds',
-            'type': 'line',
-            'source': 'bounds',
-            'layout': {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            'paint': {
-                'line-color': '#ff0000',
-                'line-width': 8,
-            }
-        });
-    });
 
     const renderOptions = document.getElementById('menu');
     const inputs = renderOptions.getElementsByTagName('input');
