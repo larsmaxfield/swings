@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <title>Tall-bounded underzoom</title>
-    <meta property="og:description" content="Adjust underzoom parameters on a tall-bounded world." />
+<head><head>
+    <title>Unbounded underzoom</title>
+    <meta property="og:description" content="Adjust underzoom parameters on an unbounded world." />
     <meta charset='utf-8'>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel='stylesheet' href='./maplibre-gl.css' />
@@ -45,6 +45,7 @@
 <div id="map"></div>
 
 <table id="listing-group-bottom-left" class="listing-group">
+    <tr><td><label for="render-world-copies">render world copies</label></td><td><input type="checkbox" id="render-world-copies" unchecked/></td></tr>
     <tr><td><label for="allow-underzoom">allow underzoom</label></td><td><input type="checkbox" id="allow-underzoom" checked/></td></tr>
     <tr><td><label for="underzoom-scale-slider" id="underzoom">underzoom scale</label></td><td><input type="range" id="underzoom-scale-slider" min="0" max="1" step="0.1" value="0.8" /></td></tr>
     <tr><td><label for="overpan-ratio-slider" id="overpan">overpan ratio</label></td><td><input type="range" id="overpan-ratio-slider" min="0" max="1" step="0.1" value="1.0" /></td></tr>
@@ -53,9 +54,12 @@
 <table id="listing-group-top-left" class="listing-group">
     <tr><td><label for="zoom-out">zoom out upon change</label></td><td><input type="checkbox" id="zoom-out" checked/></td></tr>
 </table>
-    
+
 <script>
     function setUnderzoomFromUi() {
+        map.setRenderWorldCopies(
+            document.getElementById('render-world-copies').checked
+        )
         map.setAllowUnderzoom(
             document.getElementById('allow-underzoom').checked
         )
@@ -71,25 +75,14 @@
         map.setOverpanRatio(overpan)
         document.getElementById("overpan").textContent=`overpan ratio (${overpan.toFixed(1)}:1.0)`;
     }
-    
-    // Set bounds to Amsterdam, Netherlands
-    const north = 52.3676 + 0.5;
-    const east = 4.9041 + 0.25;
-    const south = 52.3676 - 0.5;
-    const west = 4.9041 - 0.25;
-    
-    const bounds = [
-        [west, south], // Southwest coordinates
-        [east, north] // Northeast coordinates
-    ];
 
     const map = new maplibregl.Map({
         container: 'map',
-        center: [(west+east)/2, (north+south)/2],
-        maxBounds: bounds, // Sets bounds as max
+        center: [0, 0], // starting position [lng, lat]
         renderWorldCopies: false,
         allowUnderzoom: true,
         underzoomScale: 0.8,
+        overpanRatio: 1.0,
         style: {
             version: 8,
             sources: {
@@ -120,34 +113,14 @@
         "top-right"
     );
 
+    // World bounds
+    const north = 85.0511287798066;
+    const east = 180;
+    const south = -85.05112877980659;
+    const west = -180;
+
     map.on('load', () => {
-        map.addSource('bounds', {
-            'type': 'geojson',
-            'data': {
-                'type': 'Feature',
-                'properties': {},
-                'geometry': {
-                    'type': 'LineString',
-                    'coordinates': [
-                        [west, south],
-                        [west, north],
-                        [east, north],
-                        [east, south],
-                        [west, south],
-                    ]
-                }
-            }
-        });
-        map.addLayer({
-            'id': 'bounds',
-            'type': 'line',
-            'source': 'bounds',
-            'paint': {
-                'line-color': '#ff0000',
-                'line-width': 4,
-                'line-offset': -2,
-            }
-        });
+        document.getElementById('render-world-copies').addEventListener('change', setUnderzoomFromUi);
         document.getElementById('allow-underzoom').addEventListener('change', setUnderzoomFromUi);
         document.getElementById('underzoom-scale-slider').addEventListener('input', setUnderzoomFromUi);
         document.getElementById('overpan-ratio-slider').addEventListener('input', setOverpanFromUi);
