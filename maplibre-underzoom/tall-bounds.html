@@ -53,7 +53,24 @@
         center: [(west+east)/2, (north+south)/2],
         maxBounds: bounds, // Sets bounds as max
         renderWorldCopies: false,
-        style: 'https://demotiles.maplibre.org/styles/osm-bright-gl-style/style.json',
+        style: {
+            version: 8,
+            sources: {
+                rgb: {
+                    type: 'raster',
+                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    maxzoom: 19
+                },
+            },
+            layers: [
+                {
+                    id: 'rgb',
+                    type: 'raster',
+                    source: 'rgb'
+                },
+            ]
+        },
     });
 
     map.addControl(
