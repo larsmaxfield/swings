@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>3D Colormap</title>
+    <meta property="og:description" content="Show elevation with a colormap in 3D." />
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel='stylesheet' href='./maplibre-gl.css' />
+    <script src='./maplibre-gl.js'></script>
+    <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        html, body, #map { height: 100%; }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+    // Constants
+    const terrainExaggeration = 3.0;
+    const terrainEncoding = "custom";
+    const interval = 1.0;  // Amazon Terrarium 1.0
+    const baseShift = 0.0;  // Amazon Terrarium 32768.0 (2^15)
+    const redFactor = 256.0*256.0*interval;  //  Amazon Terrarium 256*
+    const greenFactor = 256.0*interval;  //  Amazon Terrarium 1*
+    const blueFactor = interval;  //  Amazon Terrarium /256
+
+    // add the PMTiles plugin to the maplibregl global.
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol('pmtiles', protocol.tile);
+
+    // const PMTILES_URL_RGB = './rgb-direct.pmtiles';
+    // const PMTILES_URL_TERRAIN = './terrain-direct.pmtiles';
+    const PMTILES_URL_RGB = '../../maplibre-pmtiles/20241104_174121_stitched_rgb.pmtiles';
+    const PMTILES_URL_TERRAIN = '../../maplibre-pmtiles/20241104_174121_stitched_height.pmtiles';
+    // const PMTILES_URL_RGB = 'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_rgb.pmtiles';
+    // const PMTILES_URL_TERRAIN = 'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_height.pmtiles';
+
+    const pr = new pmtiles.PMTiles(PMTILES_URL_RGB);
+    const pt = new pmtiles.PMTiles(PMTILES_URL_TERRAIN);
+
+    protocol.add(pr);
+    protocol.add(pt);
+
+    const hm = [
+        pr.getHeader(),
+        pr.getMetadata(),
+        pt.getHeader(),
+        pt.getMetadata(),
+    ];
+
+    const elevationEncoding = "custom"; 
+    const elevationInterval = 1.0;  // Almond Blossom 0.13
+    const elevationBaseShift = 0.0;  //  Almond Blossom 2000.0
+    const elevationRedFactor = 256*256*elevationInterval;
+    const elevationGreenFactor = 256*elevationInterval;
+    const elevationBlueFactor = 1.0*elevationInterval;
+
+    const viridisShaderFunction =  `
+        vec4 colormap(float t) {
+            const vec3 c0 = vec3(0.2777273272234177, 0.005407344544966578, 0.3340998053353061);
+            const vec3 c1 = vec3(0.1050930431085774, 1.404613529898575, 1.384590162594685);
+            const vec3 c2 = vec3(-0.3308618287255563, 0.214847559468213, 0.09509516302823659);
+            const vec3 c3 = vec3(-4.634230498983486, -5.799100973351585, -19.33244095627987);
+            const vec3 c4 = vec3(6.228269936347081, 14.17993336680509, 56.69055260068105);
+            const vec3 c5 = vec3(4.776384997670288, -13.74514537774601, -65.35303263337234);
+            const vec3 c6 = vec3(-5.435455855934631, 4.645852612178535, 26.3124352495832);
+
+            return vec4(c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6))))), 1.0);
+        }
+        `;
+
+    Promise.all(hm).then((values) => {
+        values.forEach((value) => console.log(value));
+
+        const r_h = values[0];
+        const r_m = values[1];
+        const t_h = values[2];
+        const t_m = values[3];
+
+        const overZoom = 2;
+        const maxZoom = Math.max(r_h.maxZoom, t_h.maxZoom) + overZoom;
+        const map = new maplibregl.Map({
+            validateStyle: false,
+            container: 'map',
+            zoom: 0,
+            center: [-25, 25],
+            bearing: -30,
+            pitch: 63,
+            hash: true,
+            maxZoom: maxZoom,  // Max zoom + overzoom
+            maxPitch: 85,
+            renderWorldCopies: false,
+            allowUnderzoom: true,
+            underzoom: 80,
+            overpan: 50,
+            style: {
+                version: 8,
+                sources: {
+                    'rgb_source': {
+                        type: 'raster',
+                        url: `pmtiles://${PMTILES_URL_RGB}`,
+                        attribution: r_m.attribution + ' · ' + t_m.attribution,
+                    },
+                    'terrain_source': {
+                        type: 'raster-dem',
+                        url: `pmtiles://${PMTILES_URL_TERRAIN}`,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    'elevation_source': {
+                        type: 'raster-dem',
+                        url: `pmtiles://${PMTILES_URL_TERRAIN}`,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    'hillshade_source': {
+                        type: 'raster-dem',
+                        url: `pmtiles://${PMTILES_URL_TERRAIN}`,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                },
+                layers: [
+                    {
+                        id: 'elevs',
+                        type: 'elevation',
+                        source: 'elevation_source',
+                        paint: {
+                            'elevation-colormap-breakpoint-low': 16500,  // 14000 appx data min
+                            'elevation-colormap-breakpoint-high': 18000,  // 45000 appx data max
+                            'elevation-colormap-function': viridisShaderFunction,
+                            'elevation-colormap-lowcutoff': 1,
+                            'elevation-colormap-lowcutoff-color': '#ffffff00',
+                        },
+                    },
+                    {
+                        'id': 'raster',
+                        'type': 'raster',
+                        'source': 'rgb_source',
+                        'paint': {
+                            'raster-resampling': 'linear',
+                            'raster-opacity': 0.5,
+                        }
+                    },
+                    {
+                        'id': 'hills',
+                        'type': 'hillshade',
+                        'source': 'hillshade_source',
+                        'paint': {
+                            'hillshade-exaggeration': 1.0,
+                            'hillshade-illumination-anchor': 'map',
+                        }
+                    },
+                ],
+                terrain: {
+                    source: 'terrain_source',
+                    exaggeration: terrainExaggeration,
+                },
+            },
+        });
+        map.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+
+        map.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration
+            })
+        );
+    });
+
+
+</script>
+</body>
+</html>
