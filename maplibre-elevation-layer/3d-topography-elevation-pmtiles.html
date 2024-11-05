@@ -9,12 +9,39 @@
     <script src='./maplibre-gl.js'></script>
     <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
     <style>
-        body { margin: 0; padding: 0; }
-        html, body, #map { height: 100%; }
+        html, body { margin: 0; padding: 0; height: 100% }
+        body {
+            display: flex;
+        }
+        #container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #sliders {
+            display: flex;
+            flex-wrap: nowrap;
+            flex-direction: row;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        #map {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
-<div id="map"></div>
+    <div id="container">
+        <div id="sliders">
+            <label for="slider-low" id="label-low">Low: </label>
+            <input type="range" min="0" max="60000" value="0" id="slider-low" step="200" name="slider-low">
+            <input type="range" min="0" max="60000" value="0" id="slider-high" step="200" name="slider-high">
+            <label for="slider-high" id="label-high">High: </label>
+        </div>
+        <div id="map">
+        </div>
+    </div>
 <script>
     // Constants
     const terrainExaggeration = 3.0;
@@ -136,10 +163,10 @@
                         type: 'elevation',
                         source: 'elevation_source',
                         paint: {
-                            'elevation-colormap-breakpoint-low': 16500,  // 14000 appx data min
-                            'elevation-colormap-breakpoint-high': 18000,  // 45000 appx data max
+                            'elevation-colormap-breakpoint-low': t_m.minHeight,
+                            'elevation-colormap-breakpoint-high': t_m.maxHeight,
                             'elevation-colormap-function': viridisShaderFunction,
-                            'elevation-colormap-lowcutoff': 1,
+                            'elevation-colormap-lowcutoff': t_m.minHeight,
                             'elevation-colormap-lowcutoff-color': '#ffffff00',
                         },
                     },
@@ -149,7 +176,7 @@
                         'source': 'rgb_source',
                         'paint': {
                             'raster-resampling': 'linear',
-                            'raster-opacity': 0.5,
+                            'raster-opacity': 0.1,
                         }
                     },
                     {
@@ -159,6 +186,7 @@
                         'paint': {
                             'hillshade-exaggeration': 1.0,
                             'hillshade-illumination-anchor': 'map',
+                            'hillshade-shadow-color': '#000000',
                         }
                     },
                 ],
@@ -182,8 +210,57 @@
                 exaggeration: terrainExaggeration
             })
         );
-    });
 
+        function setLowBreakpoint(value) {
+            map.setPaintProperty(
+                    'elevs',
+                    'elevation-colormap-breakpoint-low',
+                    value
+                );
+            document.getElementById('label-low').innerHTML = `${(value*t_m.metersPerHeight*1000).toFixed(1)} mm`;
+            setTimeout(() => { // Required as a timeout, otherwise changes to paint props are not reflected
+                map.terrain.sourceCache.freeRtt();
+                map.terrain.sourceCache.sourceCache.reload();
+            }, 200);
+        }
+        
+        function setHighBreakpoint(value) {
+            map.setPaintProperty(
+                    'elevs',
+                    'elevation-colormap-breakpoint-high',
+                    value
+                );
+            document.getElementById('label-high').innerHTML = `${(value*t_m.metersPerHeight*1000).toFixed(1)} mm`;
+            setTimeout(() => { // Required as a timeout, otherwise changes to paint props are not reflected
+                map.terrain.sourceCache.freeRtt();
+                map.terrain.sourceCache.sourceCache.reload();
+            }, 200);
+        };
+
+        function initLowBreakpoint(value) {
+            setLowBreakpoint(value);
+            document.getElementById('slider-low').value = value;
+            document.getElementById('slider-low').min = value;
+        }
+
+        function initHighBreakpoint(value) {
+            setHighBreakpoint(value);
+            document.getElementById('slider-high').value = value;
+            document.getElementById('slider-high').max = value;
+        }
+
+        map.on('load', () => {
+            initLowBreakpoint(t_m.minHeight);
+            initHighBreakpoint(t_m.maxHeight);
+        });
+
+        ['mouseup', 'keyup'].forEach( event => 
+            document.getElementById('slider-low')
+            .addEventListener(event, (e) => setLowBreakpoint(parseInt(e.target.value,10))));
+        ['mouseup', 'keyup'].forEach( event => 
+            document.getElementById('slider-high')
+            .addEventListener(event, (e) => setHighBreakpoint(parseInt(e.target.value,10))));
+    });
 
 </script>
 </body>
