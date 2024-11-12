@@ -58,10 +58,12 @@
 
     // const PMTILES_URL_RGB = './rgb-direct.pmtiles';
     // const PMTILES_URL_TERRAIN = './terrain-direct.pmtiles';
-    const PMTILES_URL_RGB = '../../maplibre-pmtiles/20241104_174121_stitched_rgb.pmtiles';
-    const PMTILES_URL_TERRAIN = '../../maplibre-pmtiles/20241104_174121_stitched_height.pmtiles';
+    // const PMTILES_URL_RGB = '../../maplibre-pmtiles/20241104_174121_stitched_rgb.pmtiles';
+    // const PMTILES_URL_TERRAIN = '../../maplibre-pmtiles/20241104_174121_stitched_height.pmtiles';
     // const PMTILES_URL_RGB = 'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_rgb.pmtiles';
     // const PMTILES_URL_TERRAIN = 'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_height.pmtiles';
+    const PMTILES_URL_RGB = 'https://storage.googleapis.com/larsmaxfield.com/paintings/winter-landscape/20241104_174121_stitched_rgb.pmtiles';
+    const PMTILES_URL_TERRAIN = 'https://storage.googleapis.com/larsmaxfield.com/paintings/winter-landscape/20241104_174121_stitched_height.pmtiles';
 
     const pr = new pmtiles.PMTiles(PMTILES_URL_RGB);
     const pt = new pmtiles.PMTiles(PMTILES_URL_TERRAIN);
@@ -176,7 +178,7 @@
                         'source': 'rgb_source',
                         'paint': {
                             'raster-resampling': 'linear',
-                            'raster-opacity': 0.1,
+                            'raster-opacity': 0.0,
                         }
                     },
                     {
