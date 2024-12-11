@@ -72,18 +72,23 @@
         const redFactor = 256.0*256.0*interval;
         const greenFactor = 256.0*interval;
         const blueFactor = interval;
+        const hillshadeExaggeration = 1.0; 
         
         // add the PMTiles plugin to the maplibregl global.
         const protocol = new pmtiles.Protocol();
         maplibregl.addProtocol('pmtiles', protocol.tile);
         
         const PMTILES_URLS_RGB = [
-        'https://storage.googleapis.com/larsmaxfield.com/paintings/winter-landscape/20241104_174121_stitched_rgb.pmtiles',
-        'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_rgb.pmtiles'
+            // '20241023_175809_stitched_rgb_almond_blossom.pmtiles',
+            // '20241104_174121_stitched_rgb_winter_landscape.pmtiles',
+            'https://pub-71d989b3685545118a21f845c49db6a3.r2.dev/paintings/almond-blossom/20241023_175809_stitched_rgb.pmtiles',
+            'https://pub-71d989b3685545118a21f845c49db6a3.r2.dev/paintings/winter-landscape/20241104_174121_stitched_rgb.pmtiles',
         ];
         const PMTILES_URLS_HEIGHT = [
-        'https://storage.googleapis.com/larsmaxfield.com/paintings/winter-landscape/20241104_174121_stitched_height.pmtiles',
-        'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_height.pmtiles'
+            // '20241023_175809_stitched_height_almond_blossom.pmtiles',
+            // '20241104_174121_stitched_height_winter_landscape.pmtiles',
+            'https://pub-71d989b3685545118a21f845c49db6a3.r2.dev/paintings/almond-blossom/20241023_175809_stitched_height.pmtiles',
+            'https://pub-71d989b3685545118a21f845c49db6a3.r2.dev/paintings/winter-landscape/20241104_174121_stitched_height.pmtiles',
         ];
         let i = 0;
         
@@ -134,7 +139,7 @@
                     sources: {
                         'rgb_source': {
                             type: 'raster',
-                            url: `pmtiles://${PMTILES_URLS_RGB[i]}`,
+                            url: `pmtiles://${PMTILES_URLS_RGB[0]}`,
                             attribution: r_m.attribution,
                         },
                         'rgb_source2': {
@@ -144,7 +149,7 @@
                         },
                         'terrain': {
                             type: 'raster-dem',
-                            url: `pmtiles://${PMTILES_URLS_HEIGHT[i]}`,
+                            url: `pmtiles://${PMTILES_URLS_HEIGHT[0]}`,
                             encoding: terrainEncoding,
                             redFactor: redFactor,
                             greenFactor: greenFactor,
@@ -162,7 +167,7 @@
                         },
                         'hillshade_source': {
                             type: 'raster-dem',
-                            url: `pmtiles://${PMTILES_URLS_HEIGHT[i]}`,
+                            url: `pmtiles://${PMTILES_URLS_HEIGHT[0]}`,
                             encoding: terrainEncoding,
                             redFactor: redFactor,
                             greenFactor: greenFactor,
@@ -193,7 +198,7 @@
                         'type': 'raster',
                         'source': 'rgb_source2',
                         'layout': {
-                            'visibility': 'none',
+                            'visibility': 'none'
                         },
                         'paint': {
                             'raster-resampling': 'linear'
@@ -204,7 +209,7 @@
                         'type': 'hillshade',
                         'source': 'hillshade_source',
                         'paint': {
-                            'hillshade-exaggeration': 1.0,
+                            'hillshade-exaggeration': hillshadeExaggeration,
                             'hillshade-illumination-anchor': 'map',
                         }
                     },
@@ -213,10 +218,10 @@
                         'type': 'hillshade',
                         'source': 'hillshade_source2',
                         'layout': {
-                            'visibility': 'none',
+                            'visibility': 'none'
                         },
                         'paint': {
-                            'hillshade-exaggeration': 1.0,
+                            'hillshade-exaggeration': hillshadeExaggeration,
                             'hillshade-illumination-anchor': 'map',
                         }
                     },
@@ -248,13 +253,13 @@
             
             var sources = (MapLibreStyleDefinition = [
                 {
-                    title: "Winter Landscape",
+                    title: "Almond Blossom",
                     raster_id: `raster`,
                     terrain_id: `terrain`,
                     hills_id: `hills`,
                 },
                 {
-                    title: "Almond Blossom",
+                    title: "Winter Landscape",
                     raster_id: `raster2`,
                     terrain_id: `terrain2`,
                     hills_id: `hills2`,
@@ -392,22 +397,22 @@
             }
         }
         
-        MapLibreSourceVisibilityControl.DEFAULT_SOURCE = "Winter Landscape";
-        
         MapLibreSourceVisibilityControl.DEFAULT_SOURCES = [
         {
-            title: "Winter Landscape",
+            title: "Almond Blossom",
             raster_id: `raster`,
             terrain_id: `terrain`,
             hills_id: `hills`,
         },
         {
-            title: "Almond Blossom",
+            title: "Winter Landscape",
             raster_id: `raster2`,
             terrain_id: `terrain2`,
             hills_id: `hills2`,
         },
         ];
+        
+        MapLibreSourceVisibilityControl.DEFAULT_SOURCE = MapLibreSourceVisibilityControl.DEFAULT_SOURCES[i]?.title;
         
         
     </script>
