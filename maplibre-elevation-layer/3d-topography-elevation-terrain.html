@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>3D Colormap</title>
+    <meta property="og:description" content="Show elevation with a colormap in 3D." />
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel='stylesheet' href='./maplibre-gl.css' />
+    <script src='./maplibre-gl-dev.js'></script>
+    <style>
+        html, body { margin: 0; padding: 0; height: 100% }
+        body {
+            display: flex;
+        }
+        #container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #sliders {
+            flex: none;
+        }
+        #map {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <div id="sliders">
+        <p>Slider whose "mouseup" is listened to by the map</p>
+        <input type="range" min="-1000" max="4000" value="0" id="slider">
+    </div>
+    <div id="map">
+    </div>
+</div>
+
+<script>
+    const terrainExaggeration = 1.0;  // 1.0 default 
+    const terrainEncoding = "custom";
+    const interval = 1.0;  // Amazon Terrarium 1.0
+    const baseShift = 32768.0;  // Amazon Terrarium 32768.0 (2^15)
+    const redFactor = 256.0*interval;  //  Amazon Terrarium 256*
+    const greenFactor = interval;  //  Amazon Terrarium 1*
+    const blueFactor = interval/256.0;  //  Amazon Terrarium /256
+    // const interval = 0.1;  // Mapbox 0.1
+    // const baseShift = 10000.0;  //  Mapbox 10000.0
+    // const redFactor = 256*256*interval;
+    // const greenFactor = 256*interval;
+    // const blueFactor = 1.0*interval;
+
+    const viridisShaderFunction =  `
+        vec4 colormap(float t) {
+            const vec3 c0 = vec3(0.2777273272234177, 0.005407344544966578, 0.3340998053353061);
+            const vec3 c1 = vec3(0.1050930431085774, 1.404613529898575, 1.384590162594685);
+            const vec3 c2 = vec3(-0.3308618287255563, 0.214847559468213, 0.09509516302823659);
+            const vec3 c3 = vec3(-4.634230498983486, -5.799100973351585, -19.33244095627987);
+            const vec3 c4 = vec3(6.228269936347081, 14.17993336680509, 56.69055260068105);
+            const vec3 c5 = vec3(4.776384997670288, -13.74514537774601, -65.35303263337234);
+            const vec3 c6 = vec3(-5.435455855934631, 4.645852612178535, 26.3124352495832);
+
+            return vec4(c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6))))), 1.0);
+        }
+        `;
+
+    const grayscaleShaderFunction = `
+        vec4 colormap(float t) {
+            //          r  g  b  a
+            return vec4(t, t, t, 1.0);
+        }
+        `;
+
+    const redscaleShaderFunction = `
+        vec4 colormap(float t) {
+            //          r  g  b  a
+            return vec4(t, 0.0, 0.0, 1.0);
+        }
+        `;
+
+    const map = (window.map = new maplibregl.Map({
+        validateStyle: false,
+        container: 'map',
+        zoom: 12,
+        center: [11.39085, 47.27574],
+        pitch: 52,
+        // maxBounds: [[-Infinity,-90],[Infinity,90]],
+        hash: true,
+        renderWorldCopies: false,
+        style: {
+            version: 8,
+            sources: {
+                rgb: {
+                    type: 'raster',
+                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    maxzoom: 19
+                },
+                // Use a different source for terrain and hillshade layers, to improve render quality
+                terrainSource: {
+                    type: 'raster-dem',
+                    url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
+                    tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    encoding: terrainEncoding,
+                    redFactor: redFactor,
+                    greenFactor: greenFactor,
+                    blueFactor: blueFactor,
+                    baseShift: baseShift,
+                },
+                elevationSource: {
+                    type: 'raster-dem',
+                    url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
+                    tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    encoding: terrainEncoding,
+                    redFactor: redFactor,
+                    greenFactor: greenFactor,
+                    blueFactor: blueFactor,
+                    baseShift: baseShift,
+                },
+                hillshadeSource: {
+                    type: 'raster-dem',
+                    url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
+                    tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    encoding: terrainEncoding,
+                    redFactor: redFactor,
+                    greenFactor: greenFactor,
+                    blueFactor: blueFactor,
+                    baseShift: baseShift,
+                },
+            },
+            layers: [
+                {
+                    id: 'elevs',
+                    type: 'elevation',
+                    source: 'elevationSource',
+                    layout: {visibility: 'visible'},
+                    paint: {
+                        'elevation-colormap-breakpoint-low': 0.0,  // Sea level 0
+                        'elevation-colormap-breakpoint-high': 4809.0,  // Everest 8849, Mont Blanc 4809
+                        'elevation-colormap-function': viridisShaderFunction,
+                        'elevation-colormap-lowcutoff': -100.0,
+                        'elevation-colormap-lowcutoff-color': '#ffffffff',
+                    },
+                },
+                {
+                    id: 'rgb',
+                    type: 'raster',
+                    source: 'rgb',
+                    layout: {visibility: 'none'},
+                    paint: {
+                        'raster-opacity': 0.2,
+                        'raster-resampling': 'nearest',
+                    }
+                },
+                {
+                    id: 'hills',
+                    type: 'hillshade',
+                    source: 'hillshadeSource',
+                    // layout: {visibility: 'none'},
+                    paint: {
+                        'hillshade-exaggeration': 0.2,
+                        'hillshade-illumination-anchor': 'map',
+                        'hillshade-shadow-color': '#000000',
+                    }
+                },
+            ],
+            terrain: {
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration
+            }
+        },
+        maxZoom: 18,
+        maxPitch: 85
+    }));
+
+    map.addControl(
+        new maplibregl.NavigationControl({
+            visualizePitch: true,
+            showZoom: true,
+            showCompass: true
+        })
+    );
+
+    map.addControl(
+        new maplibregl.TerrainControl({
+            source: 'terrainSource',
+            exaggeration: 1
+        })
+    );
+
+    // map.on('load', () => {
+    //     // Once the map has finished loading,
+    //     // set paint property and
+    //     // free tiles and reload on 0.200 sec timeout
+    //     map.setPaintProperty(
+    //                 'elevs',
+    //                 'elevation-colormap-breakpoint-low',
+    //                 1500.0
+    //             );
+    //     map.setPaintProperty(
+    //                 'elevs',
+    //                 'elevation-colormap-lowcutoff',
+    //                 1000.0
+    //             );
+    //     setTimeout(() => {
+    //         map.terrain.sourceCache.freeRtt();
+    //         map.terrain.sourceCache.sourceCache.reload();
+    //     }, 200);
+    // });
+
+    document.getElementById('slider')
+        .addEventListener('mouseup', (e) => {
+            const value = parseInt(e.target.value, 10);
+            map.setPaintProperty(
+                    'elevs',
+                    'elevation-colormap-breakpoint-low',
+                    value
+                );
+            map.setPaintProperty(
+                    'elevs',
+                    'elevation-colormap-breakpoint-high',
+                    value+3000
+                );
+            map.setPaintProperty(
+                    'elevs',
+                    'elevation-colormap-lowcutoff',
+                    value-1000
+                );
+            setTimeout(() => { // Required as a timeout, otherwise changes to paint props are not reflected
+                map.terrain.sourceCache.freeRtt();
+                map.terrain.sourceCache.sourceCache.reload();
+            }, 200);
+        });
+
+</script>
+</body>
+</html>

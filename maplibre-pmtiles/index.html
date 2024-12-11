@@ -6,7 +6,8 @@
     <meta charset='utf-8'>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css' />
-    <script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script>
+    <!-- <script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script> -->
+    <script src='../maplibre-underzoom/maplibre-gl.js'></script>
     <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
     <style>
         body { margin: 0; padding: 0; }
@@ -18,7 +19,7 @@
 <script>
 
     // Constants
-    const terrainExaggeration = 5.0;
+    const terrainExaggeration = 3.0;
     const terrainEncoding = "custom";
     const interval = 1.0;  // Amazon Terrarium 1.0
     const baseShift = 0.0;  // Amazon Terrarium 32768.0 (2^15)
@@ -30,8 +31,14 @@
     const protocol = new pmtiles.Protocol();
     maplibregl.addProtocol('pmtiles', protocol.tile);
 
-    const PMTILES_URL_RGB = './rgb.pmtiles';
-    const PMTILES_URL_TERRAIN = './terrain.pmtiles';
+    // const PMTILES_URL_RGB = './rgb-direct.pmtiles';
+    // const PMTILES_URL_TERRAIN = './terrain-direct.pmtiles';
+    // const PMTILES_URL_RGB = './20241104_174121_stitched_rgb.pmtiles';
+    // const PMTILES_URL_TERRAIN = './20241104_174121_stitched_height.pmtiles';
+    // const PMTILES_URL_RGB = 'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_rgb.pmtiles';
+    // const PMTILES_URL_TERRAIN = 'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_height.pmtiles';
+    const PMTILES_URL_RGB = 'https://storage.googleapis.com/larsmaxfield.com/paintings/winter-landscape/20241104_174121_stitched_rgb.pmtiles';
+    const PMTILES_URL_TERRAIN = 'https://storage.googleapis.com/larsmaxfield.com/paintings/winter-landscape/20241104_174121_stitched_height.pmtiles';
 
     const pr = new pmtiles.PMTiles(PMTILES_URL_RGB);
     const pt = new pmtiles.PMTiles(PMTILES_URL_TERRAIN);
@@ -46,7 +53,7 @@
         pt.getMetadata(),
     ];
 
-    Promise.all(hm).then((values) => {
+    const map = Promise.all(hm).then((values) => {
         values.forEach((value) => console.log(value));
 
         const r_h = values[0];
@@ -56,14 +63,19 @@
 
         const overZoom = 2;
         const maxZoom = Math.max(r_h.maxZoom, t_h.maxZoom) + overZoom;
-
         const map = new maplibregl.Map({
             container: 'map',
             zoom: 0,
-            center: [0, 0],
+            center: [-25, 25],
+            bearing: -30,
+            pitch: 63,
             hash: true,
             maxZoom: maxZoom,  // Max zoom + overzoom
+            maxPitch: 85,
             renderWorldCopies: false,
+            allowUnderzoom: true,
+            underzoom: 80,
+            overpan: 50,
             style: {
                 version: 8,
                 sources: {
@@ -96,6 +108,9 @@
                         'id': 'raster',
                         'type': 'raster',
                         'source': 'rgb_source',
+                        'paint': {
+                            'raster-resampling': 'linear'
+                        }
                     },
                     {
                         'id': 'hills',
@@ -114,8 +129,6 @@
             }
         });
 
-        map.showTileBoundaries = true
-
         map.addControl(
             new maplibregl.NavigationControl({
                 visualizePitch: true,
@@ -130,7 +143,11 @@
                 exaggeration: terrainExaggeration,
             })
         );
+        
+        return map
     });
+
+    
 
 </script>
 </body>
