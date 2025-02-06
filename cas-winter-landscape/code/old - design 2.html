@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design2</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="./pkg/leaflet@1.7.1/leaflet.css" crossorigin=""/>
+    <script src="./pkg/leaflet@1.7.1/leaflet.js" crossorigin=""></script>
+    
+    <!-- Leaflet Sidebar -->
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./pkg/leaflet-sidebar-v2/leaflet-sidebar.css">
+    <script src="./pkg/leaflet-sidebar-v2/leaflet-sidebar.js"></script>
+
+    <!-- AnyChart JavaScript -->
+    <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-bundle.min.js"></script>
+
+     <link rel="stylesheet" href="./pkg/leaflet-fullscreen/Control.FullScreen.css"/>
+     <script src="./pkg/leaflet-fullscreen/Control.FullScreen.js"></script>
+
+     <script src="./pkg/leaflet.sync/L.Map.Sync.js"></script>
+
+     <link rel="stylesheet" href="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.css" crossorigin=""/>
+     <script src="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.min.js" crossorigin=""></script>
+
+     <link rel='stylesheet' href='./pkg/maplibre-gl@3.6.2/maplibre-gl.css' />
+     <script src='./pkg/maplibre-gl@3.6.2/maplibre-gl.js'></script>
+     <script src='./pkg/maplibre-control-minimap/mapboxgl-control-minimap.js'></script>
+
+     <script src="./pkg/regenerator-runtime@0.14.0/runtime.js" type="text/javascript"></script>
+     <script src="./pkg/leaflet-topography@0.2.1/leaflet-topography.js" type="text/javascript"></script>
+
+     <link rel="stylesheet" href="./pkg/leaflet-minimap/Control.MiniMap.css"/>
+     <script src="./pkg/leaflet-minimap/Control.MiniMap.js"></script>
+     <style type="text/css">
+        html, body { 
+          width: 100%; 
+          height: 100%; 
+          padding: 0;
+          margin: 0;
+        }
+
+        /* Grid arrange */
+        .maps {
+            height: 100%;
+            width: 100%;
+            display: grid;
+            grid-template-rows: repeat(2, 1fr);
+            grid-template-columns: repeat(5, 1fr);
+        }
+
+        html, body, #webgl, #map1 {
+          font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;
+          background-color: black;
+        }
+
+        .webgl {
+            grid-column: 1 / 3;
+            grid-row: 1 / -1;
+        }
+
+        .map1 {
+            grid-column: 3 / -2;
+            grid-row: 1 / -1;
+        }
+        
+    </style>
+
+</head>
+<body>
+    <div id="maps" class = "maps">
+      <div id="webgl" class="webgl"></div>
+      <div id="map1" class="map1"></div>
+      <div id="annotations" class="annotations"></div>
+    </div>
+
+    <script type="text/javascript" src="https://api.mapbox.com/mapbox-gl-js/v0.54.0/mapbox-gl.js"></script>
+	<script type="text/javascript" src="mapboxgl-control-minimap.js"></script>
+    
+    <script>
+        const url_rgb = "../data-NOBACKUP/mockup-1/20230818_181639_stitched_rgb_terrain-rgb/{z}/{y}/{x}.png"
+        const url_h = "../data-NOBACKUP/mockup-1/20230818_181639_stitched_height_terrain-rgb/{z}/{y}/{x}.png"
+
+        const attribution1 = 'Color';
+        const attribution2 = 'Height';
+        const attribution3 = 'Gradient';
+        const fitBounds = false;
+        const tileSize = 256;
+        const crs = L.CRS.Simple;
+        const zoom = 2;
+        const maxNativeZoom = 7;
+        const maxZoom = maxNativeZoom + 2;
+        const maxBoundsViscosity = 0;
+        const detectRetina = false;
+        const zoomSnap = 0.1;
+        const attributionPrefix = 'Keyence';
+        const center_1_map = -100;
+        const center_2_map = 90;
+   
+        const optionsMap1 = {
+          center: [center_1_map, center_2_map],
+          crs: crs,
+          zoom: zoom,
+          maxZoom: maxZoom,
+          zoomControl: false,
+          zoomSnap: zoomSnap,
+          fullscreenControl: true,
+          // maxBounds: bounds_map,
+          // maxBoundsViscosity: maxBoundsViscosity
+        }       
+        
+        const map1 = L.map('map1', optionsMap1);
+        map1.attributionControl.setPrefix(attributionPrefix)
+        const rgbLayer3 = L.tileLayer(url_h, {
+            attribution: attribution2,
+            fitBounds: fitBounds,
+            tileSize: tileSize,
+            detectRetina: detectRetina,
+            maxZoom: maxZoom,
+            maxNativeZoom: maxNativeZoom,
+            noWrap: true,
+        }).addTo(map1);
+        // L.control.scale(imperial=false).addTo(map1);
+        L.control.zoom({
+            position: 'topleft'
+        }).addTo(map1);
+
+        map1.pm.addControls({  
+          position: 'topright',  
+          drawCircleMarker: false,
+          rotateMode: true,
+        });
+
+        map1.pm.setPathOptions({
+          color: 'violet',
+          fillColor: 'violet'
+        })
+
+        ///////
+        const terrainExaggeration = 1; // Good with 0.005 interval // 0 to inf
+        const hillshadeExaggeration = 0.5; // Good with 0.005 interval //0 to 1
+        const terrainTiles = ["../../data-NOBACKUP/mockup-1_test/20231215_180420_stitched_height_terrain_inv0-05_z-1u/{z}/{y}/{x}.png"]; 
+        const terrainTileSize = 256;
+
+        const terrainEncoding = "custom";
+        const interval = 1;
+        const baseShift = 0.0; // Will be subtracted from
+        const redFactor = 256*256*interval;
+        const greenFactor = 256*interval;
+        const blueFactor = 1.0*interval;
+
+        const webgl = new maplibregl.Map({
+            container: 'webgl',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: ["../../data-NOBACKUP/mockup-1_test/20231215_180420_stitched_rgb/{z}/{y}/{x}.png" ],
+                        tileSize: 256,
+                        attribution: 'Keyence Color & Height',
+                    },
+                    // Use a different source for terrain and hillshade layers, to improve render quality
+                    terrainSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    hillshadeSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm'
+                    },
+                    {
+                        id: 'hills',
+                        type: 'hillshade',
+                        source: 'hillshadeSource',
+                        layout: {visibility: 'visible'},
+                        paint: { // https://maplibre.org/maplibre-style-spec/layers/#hillshade
+                            'hillshade-illumination-anchor': "map", // default "viewport"
+                            'hillshade-illumination-direction': 300, // default 335
+                            'hillshade-highlight-color': '#ffffff', // default "#FFFFFF"
+                            'hillshade-accent-color': '#000000', // default "#000000"
+                            'hillshade-shadow-color': '#000000', // default "#000000"
+                            'hillshade-exaggeration': hillshadeExaggeration // default 0.5
+                        }
+                    }
+                ],
+                terrain: {
+                    source: 'terrainSource',
+                    exaggeration: terrainExaggeration,
+                }
+            },
+            maxZoom: 18,
+            maxPitch: 85
+        });
+
+        webgl.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+
+        webgl.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration,
+            })
+        );    
+
+        webgl.on("style.load", function () {
+        webgl.addControl(new maplibregl.Minimap(), 'bottom-right');
+        });
+        
+        const map1_2 = L.tileLayer(url_h, {
+            attribution: attribution2,
+            fitBounds: fitBounds,
+            tileSize: tileSize,
+            detectRetina: detectRetina,
+            maxZoom: maxZoom,
+            maxNativeZoom: maxNativeZoom,
+            noWrap: true,
+        })
+        const miniMap = new L.Control.MiniMap(map1_2, { toggleDisplay: true }).addTo(map1); 
+        
+        webgl.sync(map1);
+        map1.sync(webgl);
+    </script>
+</body>
+</html>
+

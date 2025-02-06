@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design 4</title>
+
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.js'></script>
+    <link href='.pkg/mapbox@1.13.0/mapbox-gl.css' rel='stylesheet' /> 
+    <link rel='stylesheet' href='./pkg/ASML-own/maplibre-gl/maplibre-gl.css' />
+    <script src='./pkg/ASML-own/maplibre-gl/maplibre-gl.js'></script>
+
+    <link rel="stylesheet" href="./pkg/leaflet@1.7.1/leaflet.css" crossorigin=""/>
+    <script src="./pkg/leaflet@1.7.1/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.css" crossorigin=""/>
+    <script src="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.min.js" crossorigin=""></script>
+    <script src='./pkg/maplibre-control-minimap/mapboxgl-control-minimap.js'></script>
+    <script src="./pkg/regenerator-runtime@0.14.0/runtime.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="./pkg/leaflet-minimap/Control.MiniMap.css"/>
+    <script src="./pkg/leaflet-minimap/Control.MiniMap.js"></script>
+    <script src="./pkg/maplibre-syncMaps/syncMaps.js"></script>
+    <script src="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.js"></script>
+    <link rel="stylesheet" href="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.css" type="text/css"/>
+     
+    <script src="./pkg/ASML-own/setupMap.js"></script>
+    <script src="./pkg/ASML-own/drawStylesLong.js"></script>
+    <script src="./pkg/ASML-own/drawStylesShort.js"></script>
+    <script src="./pkg/ASML-own/ExaggerationControl.js"></script>
+    <script src="./pkg/ASML-own/LightAngleToggleControl.js"></script>
+    <script src="./pkg/ASML-own/HillshadeNAngle.js"></script>
+    <script src="./pkg/ASML-own/scale_context.js"></script>
+    <link rel="stylesheet" href="./pkg/ASML-own/style.css"/>
+    
+</head>
+<body>
+    <div class="tabs_right">
+        <div class="tab active" data-map="height">Height</div>
+        <div class="tab" data-map="plain">Plain hillshade</div>
+    </div>
+    <div id='map'>
+        <input type="color" id="color-picker" class="color-picker" onchange="changeColor(this.value)" value="#ffffff">
+    </div>
+    <div id="maps" class="maps">
+        <div id="webgl" class="webgl"></div>
+        <div id="height" class="height"></div>
+        <div id="plain" class="plain" style="display: none;"></div>
+        <div id='annotations' class="annotations">
+            <input type="text" id="username-input" placeholder="Enter your username" oninput="updateUsername()">
+            <button id="toggle-btn">Toggle User-detected Annotations</button>
+            <button class="toggle-btn" onclick="toggleLayers()">Toggle Auto-detected Annotations</button>
+            <button class="measure-button" onclick="toggleMeasurement()">Toggle Measurement Tool</button>
+            <div class="filter-section">
+                <h3>Filters</h3>
+                <div>
+                    <label for="filter-date">Hide annotations before:</label>
+                    <input type="date" id="filter-date" onchange="filterAnnotations()">
+                </div>
+                <div>
+                    <input type="checkbox" id="filter-urgent" onchange="filterAnnotations()">
+                    <label for="filter-urgent">Urgent</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="filter-consolidated" onchange="filterAnnotations()">
+                    <label for="filter-consolidated">Consolidated</label>
+                </div>
+            </div>
+            <div>
+                <button onclick="exportAnnotations()">Export Annotations</button>
+                <input type="file" id="import-file" onchange="importAnnotations(event)" style="display:none;" />
+                <button onclick="document.getElementById('import-file').click()">Import Annotations</button>
+            </div>
+            <div id='annotation-log'>
+                <h3>Annotation Log</h3>
+                <div>
+                    <input type="text" id="search-input" oninput="searchAnnotations()" placeholder="Search by title">
+                </div>
+                <div id='log-entries'></div>
+            </div>
+        </div>
+    </div>
+    <script>               
+        MapboxDraw.constants.classes.CONTROL_BASE  = 'maplibregl-ctrl';
+        MapboxDraw.constants.classes.CONTROL_PREFIX = 'maplibregl-ctrl-';
+        MapboxDraw.constants.classes.CONTROL_GROUP = 'maplibregl-ctrl-group';
+
+        const terrainExaggeration = 10; // Good with 0.005 interval // 0 to inf
+        const hillshadeExaggeration = 1; // Good with 0.005 interval //0 to 1
+        const terrainTiles = ["../../data-NOBACKUP/mockup-1_test/20240522_101941_stitched_height_terrain/{z}/{y}/{x}.png"]; 
+        const terrainTiles_viridis = ["../../data-NOBACKUP/mockup-1_test/20240522_101941_stitched_height_terrain/{z}/{y}/{x}.png"]; 
+        const RGBTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_rgb/20240515_103850_stitched_rgb/{z}/{y}/{x}.png"];
+        const heightTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_height_greenscale/{z}/{y}/{x}.png"];
+        const blackTiles = ["../../data-NOBACKUP/mockup-1_test/20240522_black/{z}/{y}/{x}.png"];
+        
+        const terrainTileSize = 256;
+
+        const terrainEncoding = "custom";
+        const interval = 1;
+        const baseShift = 0.0; 
+        const redFactor = 256*256*interval;
+        const greenFactor = 256*interval;
+        const blueFactor = 1.0*interval;
+
+        const webgl = new maplibregl.Map({
+            container: 'webgl',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: RGBTiles,
+                        tileSize: 256,
+                    },
+                    // Use a different source for terrain and hillshade layers, to improve render quality
+                    terrainSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    hillshadeSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm',
+                    },
+                    {
+                        id: 'hills',
+                        type: 'hillshade',
+                        source: 'hillshadeSource',
+                        layout: {visibility: 'visible'},
+                        paint: { // https://maplibre.org/maplibre-style-spec/layers/#hillshade
+                            'hillshade-illumination-anchor': "map", // default "viewport"
+                            'hillshade-illumination-direction': 300, // default 335
+                            'hillshade-highlight-color': '#ffffff', // default "#FFFFFF"
+                            'hillshade-accent-color': '#000000', // default "#000000"
+                            'hillshade-shadow-color': '#000000', // default "#000000"
+                            'hillshade-exaggeration': hillshadeExaggeration // default 0.5
+                        }
+                    }
+                ],
+                terrain: {
+                    source: 'terrainSource',
+                    exaggeration: terrainExaggeration,
+                }
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+            center: [-40, 40]
+        });
+
+        webgl.addControl(new maplibregl.FullscreenControl());
+        webgl.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+        webgl.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration,
+            })
+        );
+
+        //webgl.setMaxBounds(webgl.getBounds()) 
+        webgl.addControl(new HillshadeNAngle(webgl), 'top-right');
+
+        var drawFeatureID = '';
+        var newDrawFeature = false;
+
+        var draw = new MapboxDraw({
+            userProperties: true,
+            controls: {
+                'combine_features': false,
+                'uncombine_features': false,
+            },
+            styles: drawStylesLong
+        })
+
+        webgl.addControl(draw, 'top-right');
+        function changeColor(color) {
+            if (drawFeatureID !== '' && typeof draw === 'object') {
+                draw.setFeatureProperty(drawFeatureID, 'portColor', color);
+                var feat = draw.get(drawFeatureID);
+                draw.add(feat)
+            }
+        }
+
+        var setDrawFeature = function(e) {
+            if (e.features.length && e.features[0].type === 'Feature') {
+                var feat = e.features[0];
+                drawFeatureID = feat.id;
+            }
+        }
+
+        webgl.on('draw.create', function() {
+            newDrawFeature = true;
+        });
+        webgl.on('draw.update', setDrawFeature);
+        webgl.on('draw.selectionchange', setDrawFeature);
+        webgl.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+            }
+            newDrawFeature = false;
+        });
+
+        webgl.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+
+                //if another drawFeature is not found - reset drawFeatureID
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+
+                // Select the corresponding log entry
+                selectLogEntry(drawFeatureID);
+            }
+
+            newDrawFeature = false;
+        });
+
+        set_logAnnotation(webgl);
+
+        function selectFeature(featureId) {
+            var feature = draw.get(featureId);
+            if (feature && feature.geometry && feature.geometry.coordinates) {
+                var coordinates = feature.geometry.coordinates;
+                var center;
+                
+                if (feature.geometry.type === 'Point') {
+                    center = {
+                        lng: coordinates[0],
+                        lat: coordinates[1]
+                    };
+                } else if (feature.geometry.type === 'LineString') {
+                    center = calculateCentroid_line(coordinates, 'LineString');
+                }
+
+                else if (feature.geometry.type === 'Polygon') {
+                    center = calculateCentroid_polygon(coordinates, 'Polygon');
+                }
+
+                if (center) {
+                    webgl.flyTo({
+                        center: center,
+                        zoom: 3,
+                        essential: true
+                    });
+
+                    // Add a CSS class to the selected annotation's log entry
+                    var logEntry = document.querySelector(`.log-entry[data-id="${featureId}"]`);
+                    if (logEntry) {
+                        // Remove the 'selected' class from all log entries
+                        var allLogEntries = document.querySelectorAll('.log-entry');
+                        allLogEntries.forEach(function(entry) {
+                            entry.classList.remove('selected');
+                        });
+                        // Add the 'selected' class to the selected log entry
+                        logEntry.classList.add('selected');
+                    }
+                } else {
+                    console.error('Invalid coordinates:', coordinates);
+                }
+            } else {
+                console.error('Invalid feature or feature geometry:', feature);
+            }
+        }
+
+        function calculateCentroid_line(coordinates) {
+            var totalPoints = coordinates.length;
+            var x = 0, y = 0;
+            coordinates.forEach(function(point) {
+                x += point[0];
+                y += point[1];
+            });
+            return {
+                lng: x / totalPoints,
+                lat: y / totalPoints
+            };
+        }
+
+        function calculateCentroid_polygon(coordinates) {
+            var totalPoints = coordinates[0].length; // Total number of points in the polygon
+            var x = 0, y = 0;
+
+            // Sum up all the coordinates
+            coordinates[0].forEach(function(point) {
+                x += point[0];
+                y += point[1];
+            });
+
+            // Calculate the average
+            var centerX = x / totalPoints;
+            var centerY = y / totalPoints;
+
+            return {
+                lng: centerX,
+                lat: centerY
+            };
+        }
+
+        function filterAnnotations() {
+            var filterDate = document.getElementById('filter-date').value;
+            var filterUrgent = document.getElementById('filter-urgent').checked;
+            var filterConsolidated = document.getElementById('filter-consolidated').checked;
+
+            // Get current map bounds
+            //var bounds = webgl.getBounds();
+
+            var logEntries = document.querySelectorAll('.log-entry');
+            logEntries.forEach(function (logEntry) {
+                var featureId = logEntry.querySelector('.title-input').id.split('-')[2];
+                var feature = draw.get(featureId);
+
+                // Check if the feature's coordinates are within the current map bounds
+                //var coordinates = feature.geometry.coordinates;
+                //var withinBounds = coordinates.reduce(function (acc, coord) {
+                //    var lngLat = new mapboxgl.LngLat(coord[0], coord[1]);
+                //    return acc || bounds.contains(lngLat);
+                //}, false);
+
+                var entryDate = logEntry.dataset.date;
+                var entryUrgent = logEntry.dataset.urgent === 'true';
+                var entryConsolidated = logEntry.dataset.consolidated === 'true';
+
+                var dateMatch = !filterDate || new Date(entryDate) >= new Date(filterDate);
+                var urgentMatch = !filterUrgent || entryUrgent;
+                var consolidatedMatch = !filterConsolidated || entryConsolidated;
+
+                if (dateMatch && urgentMatch && consolidatedMatch) {
+                    logEntry.style.display = 'block';
+                } else {
+                    logEntry.style.display = 'none';
+                }
+            });
+        }
+
+        function getCurrentDate() {
+            var date = new Date();
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        var currentUsername = 'Anonymous'; // Default username
+
+        function updateUsername() {
+            var usernameInput = document.getElementById('username-input');
+            currentUsername = usernameInput.value || 'Anonymous';
+        }
+
+        function logAnnotation(action, feature) {
+            var logEntries = document.getElementById('log-entries');
+            var logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.dataset.id = feature.id; // Store feature ID
+            logEntry.dataset.username = feature.properties.username;
+            logEntry.dataset.date = feature.properties.creationDate || new Date().toISOString().split('T')[0]; // Store date in YYYY-MM-DD format
+            logEntry.dataset.urgent = false;
+            logEntry.dataset.consolidated = false;
+
+            var title = feature.properties.title ? feature.properties.title : 'undefined';
+
+            logEntry.innerHTML = `
+                <div>
+                    <input type="text" id="title-input-${feature.id}" class="title-input" value="${title}" onchange="changeTitle('${feature.id}', this.value)">
+                </div>
+                <div onclick="selectFeature('${feature.id}')">Type: ${feature.geometry.type}</div>
+                <div>Created on: ${logEntry.dataset.date} - <strong> ${feature.properties.username || 'Anonymous'} </strong></div>
+                <div>
+                    <input type="checkbox" id="urgent-${feature.id}" name="urgent-${feature.id}" onchange="updateAnnotationStatus('${feature.id}', 'urgent', this.checked)">
+                    <label for="urgent-${feature.id}">Urgent</label><br>
+                    <input type="checkbox" id="validated-${feature.id}" name="consolidated-${feature.id}" onchange="updateAnnotationStatus('${feature.id}', 'consolidated', this.checked)">
+                    <label for="consolidated-${feature.id}">Consolidated</label><br>
+                </div>
+                <div class="comment-section" id="comment-section-${feature.id}">
+                    <input type="text" id="comment-input-${feature.id}" class="comment-input" placeholder="Add a comment">
+                    <button class="comment-button" onclick="addComment('${feature.id}')">Comment</button>
+                    <div id="comments-${feature.id}"></div>
+                </div>
+            `;
+            logEntries.prepend(logEntry);
+        }
+
+        function changeTitle(featureId, newTitle) {
+            var feature = draw.get(featureId);
+            if (feature) {
+                // Store the new title in the feature's properties
+                feature.properties.title = newTitle;
+                draw.add(feature);
+
+                // Update the log entry
+                var logEntry = document.querySelector(`.log-entry[data-id="${featureId}"]`);
+                if (logEntry) {
+                    logEntry.querySelector('.title-input').value = newTitle;
+                }
+            }
+        }
+
+        function updateAnnotationStatus(featureId, statusType, statusValue) {
+            var logEntry = document.querySelector(`.log-entry input#title-input-${featureId}`).closest('.log-entry');
+            logEntry.dataset[statusType] = statusValue;
+            filterAnnotations();
+        }
+
+        function deleteComment(commentElement) {
+            commentElement.remove();
+        }
+
+        function deleteReply(replyElement) {
+            replyElement.remove();
+        }
+
+        function addComment(featureId, parentId = null) {
+            var commentInput = document.getElementById(`comment-input-${featureId}`);
+            if (!commentInput) {
+                console.error('Comment input not found for feature ID:', featureId);
+                return;
+            }
+
+            var commentText = commentInput.value.trim();
+            if (commentText) {
+                var commentsDiv = document.getElementById(`comments-${featureId}`);
+                var comment = document.createElement('div');
+                comment.className = parentId ? 'comment reply' : 'comment';
+                comment.innerHTML = `
+                    <strong> ${currentUsername || 'Anonymous'}: </strong> <span>${commentText}</span>
+                    <div class="comment-date">${getCurrentDate()}</div>
+                    <input type="text" class="comment-input reply-input" placeholder="Reply">
+                    <button class="comment-button reply-button" onclick="addReply('${featureId}', this)">Reply</button>
+                    <button class="comment-delete" onclick="deleteComment(this.parentElement)">Delete</button>
+                `;
+
+                if (parentId) {
+                    var parentComment = document.getElementById(parentId);
+                    parentComment.appendChild(comment);
+                } else {
+                    commentsDiv.appendChild(comment);
+                }
+
+                commentInput.value = '';
+            }
+        }
+
+        function addReply(featureId, replyButton) {
+            var replyInput = replyButton.previousElementSibling;
+            var replyText = replyInput.value.trim();
+
+            if (replyText) {
+                var reply = document.createElement('div');
+                reply.className = 'comment reply';
+                reply.innerHTML = `
+                    <strong> ${currentUsername || 'Anonymous'}: </strong> <span>${replyText}</span>
+                    <div class="comment-date">${getCurrentDate()}</div>
+                    <button class="reply-delete" onclick="deleteReply(this.parentElement)">Delete</button>
+                `;
+
+                replyButton.parentElement.appendChild(reply);
+                replyInput.value = '';
+            }
+        }
+
+        function set_logAnnotation(map) {
+            map.on('draw.create', function(e) {
+                var feature = e.features[0];
+                var creationDateTime = new Date().toISOString(); // Get current datetime in ISO format
+                feature.properties.creationDateTime = creationDateTime; // Add creation datetime to feature properties
+                feature.properties.creationDate = creationDateTime.split('T')[0]; // Extract date part and add it to feature properties
+                feature.properties.username = currentUsername; // Set the username property
+                logAnnotation('Created', feature);
+            });
+
+            var setDrawFeature = function(e) {
+                if (e.action === 'draw.create' && e.features.length && e.features[0].type === 'Feature') {
+                    var feature = e.features[0];
+                    feature.properties.creationDate = new Date().toISOString().split('T')[0];
+                    feature.properties.username = currentUsername; // Set the username property
+                    logAnnotation('Created', feature);
+                }
+            };
+
+            map.on('draw.update', setDrawFeature);
+            map.on('draw.delete', function(e) {
+                e.features.forEach(function(feature) {
+                    // Find the corresponding log entry
+                    var logEntry = document.querySelector(`.log-entry input#title-input-${feature.id}`).closest('.log-entry');
+                    // Remove the log entry if it exists
+                    if (logEntry) {
+                        logEntry.remove();
+                    }
+                });
+            });
+            map.on('draw.selectionchange', setDrawFeature);
+            map.on('click', function(e) {
+                if (!newDrawFeature) {
+                    var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+
+                    //if another drawFeature is not found - reset drawFeatureID
+                    drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+                }
+
+                newDrawFeature = false;
+            })
+        }
+
+        function exportAnnotations() {
+            var annotations = [];
+            var logEntries = document.querySelectorAll('.log-entry');
+
+            logEntries.forEach(function (logEntry) {
+                var featureId = logEntry.dataset.id;
+                var feature = draw.get(featureId);
+
+                if (feature) {
+                    var comments = [];
+                    logEntry.querySelectorAll('.comment, .reply').forEach(function (commentElement) {
+                        comments.push({
+                            text: commentElement.querySelector('span').innerText,
+                            date: commentElement.querySelector('.comment-date').innerText,
+                            username: commentElement.querySelector('strong').innerText.split(':')[0], // Extract username
+                            parentId: commentElement.classList.contains('reply') ? commentElement.closest('.comment').querySelector('div').innerText : null
+                        });
+                    });
+
+                    annotations.push({
+                        feature: feature,
+                        title: feature.properties.title || 'undefined', // Include title
+                        creationDate: feature.properties.creationDate, // Include creation date here
+                        urgent: logEntry.dataset.urgent === 'true',
+                        consolidated: logEntry.dataset.consolidated === 'true',
+                        comments: comments,
+                        color: feature.properties.portColor, // Include color
+                        username: logEntry.dataset.username || 'Anonymous' // Include username
+                    });
+                }
+            });
+
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(annotations));
+            var downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "annotations.json");
+            document.body.appendChild(downloadAnchorNode); 
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importAnnotations(event) {
+            var file = event.target.files[0];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var annotations = JSON.parse(e.target.result);
+                annotations.forEach(function (annotation) {
+                    // Add the feature to the map
+                    draw.add(annotation.feature);
+
+                    // Restore the title, if present
+                    annotation.feature.properties.title = annotation.title;
+
+                    // Restore the color, if present
+                    if (annotation.color) {
+                        changeColor(annotation.color);
+                        draw.setFeatureProperty(annotation.feature.id, 'portColor', annotation.color);
+                    }
+                    
+                    annotation.feature.properties.username = annotation.username;
+                    logAnnotation('Imported', annotation.feature);
+
+                    var logEntry = document.querySelector(`.log-entry[data-id="${annotation.feature.id}"]`);
+
+                    // Restore the urgent and consolidated status
+                    document.getElementById(`urgent-${annotation.feature.id}`).checked = annotation.urgent;
+                    document.getElementById(`validated-${annotation.feature.id}`).checked = annotation.consolidated;
+                    logEntry.dataset.urgent = annotation.urgent;
+                    logEntry.dataset.consolidated = annotation.consolidated;
+
+                    // Update the log entry to show the username
+                    var usernameElement = logEntry.querySelector('strong');
+                    usernameElement.innerText = annotation.username || 'Anonymous';
+
+                    // Restore the comments and replies
+                    var commentsDiv = document.getElementById(`comments-${annotation.feature.id}`);
+                    annotation.comments.forEach(function (comment) {
+                        var commentElement = document.createElement('div'); 
+                        commentElement.className = comment.parentId ? 'comment reply' : 'comment';
+                        commentElement.innerHTML = `
+                            <strong>${comment.username || 'Anonymous'}:</strong> <span>${comment.text}</span>
+                            <div class="comment-date">${comment.date}</div>
+                            <input type="text" class="comment-input reply-input" placeholder="Reply">
+                            <button class="comment-button reply-button" onclick="addReply('${annotation.feature.id}', this)">Reply</button>
+                            <button class="comment-delete" onclick="deleteComment(this.parentElement)">Delete</button>
+                        `;
+
+                        if (comment.parentId) {
+                            var parentComment = findParentComment(commentsDiv, comment.parentId);
+                            if (parentComment) {
+                                parentComment.appendChild(commentElement);
+                            } else {
+                                commentsDiv.appendChild(commentElement);
+                            }
+                        } else {
+                            commentsDiv.appendChild(commentElement);
+                        }
+                    });
+
+                    function findParentComment(container, parentId) {
+                        var commentElements = container.querySelectorAll('.comment');
+                        for (var i = 0; i < commentElements.length; i++) {
+                            if (commentElements[i].querySelector('div').innerText === parentId) {
+                                return commentElements[i];
+                            }
+                        }
+                        return null;
+                    }
+                });
+            };
+            reader.readAsText(file);
+        }
+
+        function selectLogEntry(featureId) {
+            var logEntry = document.querySelector(`.log-entry[data-id="${featureId}"]`);
+            if (logEntry) {
+                // Remove the 'selected' class from all log entries
+                var allLogEntries = document.querySelectorAll('.log-entry');
+                allLogEntries.forEach(function(entry) {
+                    entry.classList.remove('selected');
+                });
+                // Add the 'selected' class to the selected log entry
+                logEntry.classList.add('selected');
+            }
+        }
+
+        function searchAnnotations() {
+            var searchInput = document.getElementById('search-input').value.toLowerCase();
+            var logEntries = document.querySelectorAll('.log-entry');
+            logEntries.forEach(function(logEntry) {
+                var titleInput = logEntry.querySelector('.title-input');
+                var title = titleInput.value.toLowerCase();
+                if (title.includes(searchInput)) {
+                    logEntry.style.display = 'block';
+                } else {
+                    logEntry.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

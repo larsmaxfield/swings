@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design 3</title>
+
+    <link rel="stylesheet" href="./pkg/leaflet@1.7.1/leaflet.css" crossorigin=""/>
+    <script src="./pkg/leaflet@1.7.1/leaflet.js" crossorigin=""></script>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+    <link rel="stylesheet" href="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.css" crossorigin=""/>
+    <script src="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.min.js" crossorigin=""></script>
+    <link rel='stylesheet' href='./pkg/maplibre-gl@3.6.2/maplibre-gl.css' />
+    <script src='./pkg/maplibre-gl@3.6.2/maplibre-gl.js'></script>
+    <script src='./pkg/maplibre-control-minimap/mapboxgl-control-minimap.js'></script>
+    <script src="./pkg/regenerator-runtime@0.14.0/runtime.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="./pkg/leaflet-minimap/Control.MiniMap.css"/>
+    <script src="./pkg/leaflet-minimap/Control.MiniMap.js"></script>
+    <script src="./pkg/maplibre-syncMaps/syncMaps.js"></script>
+    <script src="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.js"></script>
+    <link rel="stylesheet" href="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.css" type="text/css"/>
+     
+    <script src="./pkg/ASML-own/setupMap.js"></script>
+    <script src="./pkg/ASML-own/drawStylesLong.js"></script>
+    <script src="./pkg/ASML-own/drawStylesShort.js"></script>
+    <script src="./pkg/ASML-own/HillshadeNAngle.js"></script>
+
+    <style type="text/css">
+        html, body { 
+          width: 100%; 
+          height: 100%; 
+          padding: 0;
+          margin: 0;
+        }
+
+        .maps {
+            height: 100%;
+            width: 100%;
+            display: grid;
+            grid-template-rows: repeat(1, 1fr);
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        html, body, #webgl, #height, #rgb, #gradient, #plain {
+          font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;
+          background-color: black;
+        }
+
+        html, body, #annotations {
+          font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;
+          background-color: rgb(201, 201, 201);
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .color-picker {
+            z-index: 1005;
+            position: absolute;
+            bottom: 25px;
+            left: 5px;
+            color: white;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+        }
+                                           
+        .color-option {
+            z-index: 1005;
+            position: absolute;
+            right: 5px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .color-option-button {
+            background-color: transparent;
+            border: none;
+        }
+
+        .webgl {
+            grid-column: 1 / 4;
+            position: relative;
+        }     
+
+        .height, .plain, .contour {
+            grid-column: 4 / 7;
+            position: relative;
+        } 
+
+        .annotations {
+            grid-column: 7;
+            position: relative;
+        } 
+
+        .tab{
+            margin: 0 10px;
+            cursor: pointer;
+            padding: 5px 10px;
+            background-color: #2b2b2b;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .tab.active {
+            background-color: #2b2b2b;
+        }
+
+        .tabs_right {
+            position: absolute;
+            top: 10px;
+            left: calc((100%/7)*3 + 10px);
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+            z-index: 1000;
+        }   
+
+        .display-text {
+            margin-top: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            height: 33.33%;
+            padding: 0px;
+            box-sizing: border-box;
+        
+        }
+        .option {
+            cursor: pointer;
+            flex: 1;
+            padding: 5px 10px;
+            border: 1px solid black;
+            border-radius: 0px;
+        }
+
+        .option + .option {
+            border-left: 1px solid transparent;
+        }
+
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
+
+        .toggle-button {
+            margin-top: 2px;
+            padding: 1px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+
+        .toggle-button img {
+            width: 24px;
+            height: 24px;
+            object-fit: cover;
+        }
+
+        .light-button img {
+            width: 15px;
+            height: 24px;
+            object-fit: cover;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="tabs_right">
+        <div class="tab active" data-map="height">Height</div>
+        <div class="tab" data-map="plain">Plain hillshade</div>
+        <div class="tab" data-map="contour">Contour</div>
+    </div>
+    <div id='map'>
+        <input type="color" id="color-picker" class="color-picker" onchange="changeColor(this.value)" value="#ff0000">
+    </div>
+    <div id="maps" class="maps">
+        <div id="webgl" class="webgl"></div>
+        <div id="height" class="height"></div>
+        <div id="plain" class="plain" style="display: none;"></div>
+        <div id="contour" class="contour" style="display: none;"></div> 
+        <div id="annotations" class="annotations">
+        <div class="options">
+                <div class="option" onclick="displayText('All')">All</div>
+                <div class="option" onclick="displayText('To do')">To do</div>
+                <div class="option" onclick="displayText('Verified')">Verified</div>
+            </div>
+        </div>
+    </div>
+
+    <script>               
+        MapboxDraw.constants.classes.CONTROL_BASE  = 'maplibregl-ctrl';
+        MapboxDraw.constants.classes.CONTROL_PREFIX = 'maplibregl-ctrl-';
+        MapboxDraw.constants.classes.CONTROL_GROUP = 'maplibregl-ctrl-group';
+
+        const terrainExaggeration = 10; // Good with 0.005 interval // 0 to inf
+        const hillshadeExaggeration = 1; // Good with 0.005 interval //0 to 1
+        const terrainTiles = ["../../data-NOBACKUP/mockup-1_test/20240522_101941_stitched_height_terrain/{z}/{y}/{x}.png"]; 
+        const RGBTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_rgb/20240515_103850_stitched_rgb/{z}/{y}/{x}.png"];
+        const heightTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_height_greenscale/{z}/{y}/{x}.png"];
+        const blackTiles = ["../../data-NOBACKUP/mockup-1_test/20240522_black/{z}/{y}/{x}.png"];
+        
+        const terrainTileSize = 256;
+
+        const terrainEncoding = "custom";
+        const interval = 5;
+        const baseShift = 0.0; 
+        const redFactor = 0*256*interval;
+        const greenFactor = 0*interval;
+        const blueFactor = 1.0*interval;
+
+        const webgl = new maplibregl.Map({
+            container: 'webgl',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: RGBTiles,
+                        tileSize: 256,
+                    },
+                },
+                layers: [
+                    {
+                        id: 'grayscale',
+                        type: 'raster',
+                        source: 'osm',
+                        paint: {
+                            'raster-opacity': 1,
+                            'raster-saturation': 0,
+                        }
+                    }
+                ],
+                
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+            center: [-40, 40]
+        });
+
+        webgl.addControl(new maplibregl.FullscreenControl());
+        webgl.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+
+        webgl.setMaxBounds(webgl.getBounds())
+
+        var drawFeatureID = '';
+        var newDrawFeature = false;
+
+        var draw = new MapboxDraw({
+            userProperties: true,
+            controls: {
+                'combine_features': false,
+                'uncombine_features': false,
+            },
+            styles: drawStylesLong
+        })
+
+        webgl.addControl(draw, 'top-right');
+        function changeColor(color) {
+            if (drawFeatureID !== '' && typeof draw === 'object') {
+                draw.setFeatureProperty(drawFeatureID, 'portColor', color);
+                var feat = draw.get(drawFeatureID);
+                draw.add(feat)
+            }
+        }
+
+        var setDrawFeature = function(e) {
+            if (e.features.length && e.features[0].type === 'Feature') {
+                var feat = e.features[0];
+                drawFeatureID = feat.id;
+            }
+        }
+
+        webgl.on('draw.create', function() {
+            newDrawFeature = true;
+        });
+        webgl.on('draw.update', setDrawFeature);
+        webgl.on('draw.selectionchange', setDrawFeature);
+        webgl.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+            }
+            newDrawFeature = false;
+        });
+
+        /////////
+        function createScaleControl() {
+            const scaleControl = document.createElement('div');
+            scaleControl.className = 'maplibregl-ctrl maplibregl-ctrl-scale';
+            scaleControl.style.width = '100px';
+            scaleControl.style.backgroundColor = 'rgba(128, 128, 128, 0.5)'; // Gray with 50% transparency
+            scaleControl.style.color = 'white'; // Text color
+            scaleControl.style.padding = '5px';
+            scaleControl.style.position = 'absolute';
+            scaleControl.style.bottom = '10px';
+            scaleControl.style.right = '10px';
+            scaleControl.style.textAlign = 'center';
+            scaleControl.innerHTML = '<span id="scale-value"></span> mm';
+
+            return scaleControl;
+        }
+
+        const mapWidthCm = 22; // Width of the map in centimeters
+        const pixelsPerCm = webgl.transform.width / mapWidthCm;
+
+        // Add custom scale control to bottom right of the map
+        const scaleControl = createScaleControl();
+
+        webgl.on('load', function () {
+            const scaleControlContainer = document.createElement('div');
+            scaleControlContainer.appendChild(scaleControl);
+
+            webgl.getContainer().appendChild(scaleControl);
+
+            // Update scale value based on map zoom
+            function updateScaleValue() {
+                const scaleValue = document.getElementById('scale-value');
+                const zoom = webgl.getZoom();
+                const scale = Math.pow(2, zoom) * pixelsPerCm;
+                scaleValue.textContent = (1 / scale * 10 * 100).toFixed(4); // *10 for cm to mm, realWorldMm for 100px
+            }
+
+            // Update scale value on map load and zoom change
+            webgl.on('zoom', updateScaleValue);
+            updateScaleValue();
+            
+        });
+        ////
+        
+
+    </script>
+</body>
+</html>

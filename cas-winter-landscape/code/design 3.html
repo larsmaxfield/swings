@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design 3</title>
+
+    <link rel="stylesheet" href="./pkg/leaflet@1.7.1/leaflet.css" crossorigin=""/>
+    <script src="./pkg/leaflet@1.7.1/leaflet.js" crossorigin=""></script>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+    <link rel="stylesheet" href="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.css" crossorigin=""/>
+    <script src="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.min.js" crossorigin=""></script>
+    <link rel='stylesheet' href='./pkg/maplibre-gl@3.6.2/maplibre-gl.css' />
+    <script src='./pkg/maplibre-gl@3.6.2/maplibre-gl.js'></script>
+    <script src='./pkg/maplibre-control-minimap/mapboxgl-control-minimap.js'></script>
+    <script src="./pkg/regenerator-runtime@0.14.0/runtime.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="./pkg/leaflet-minimap/Control.MiniMap.css"/>
+    <script src="./pkg/leaflet-minimap/Control.MiniMap.js"></script>
+    <script src="./pkg/maplibre-syncMaps/syncMaps.js"></script>
+    <script src="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.js"></script>
+    <link rel="stylesheet" href="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.css" type="text/css"/>
+     
+    <script src="./pkg/ASML-own/setupMap.js"></script>
+    <script src="./pkg/ASML-own/drawStylesLong.js"></script>
+    <script src="./pkg/ASML-own/drawStylesShort.js"></script>
+    <script src="./pkg/ASML-own/ExaggerationControl.js"></script>
+    <script src="./pkg/ASML-own/LightAngleToggleControl.js"></script>
+    <script src="./pkg/ASML-own/HillshadeNAngle.js"></script>
+
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.css' rel='stylesheet' /> 
+
+    <style type="text/css">
+        html, body { 
+          width: 100%; 
+          height: 100%; 
+          padding: 0;
+          margin: 0;
+        }
+
+        .maps {
+            height: 100%;
+            width: 100%;
+            display: grid;
+            grid-template-rows: repeat(1, 1fr);
+            grid-template-columns: repeat(7, 1fr);
+        }
+
+        html, body, #webgl, #height, #rgb, #gradient, #plain {
+          font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;
+          background-color: black;
+        }
+
+        html, body, #annotations {
+          font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;
+          background-color: rgb(201, 201, 201);
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .color-picker {
+            z-index: 1005;
+            position: absolute;
+            bottom: 25px;
+            left: 5px;
+            color: white;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+        }
+                                           
+        .color-option {
+            z-index: 1005;
+            position: absolute;
+            right: 5px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .color-option-button {
+            background-color: transparent;
+            border: none;
+        }
+
+        .webgl {
+            grid-column: 1 / 4;
+            position: relative;
+        }     
+
+        .height, .plain, .contour {
+            grid-column: 4 / 7;
+            position: relative;
+        } 
+
+        .annotations {
+            grid-column: 7;
+            position: relative;
+        } 
+
+        .tab{
+            margin: 0 10px;
+            cursor: pointer;
+            padding: 5px 10px;
+            background-color: #2b2b2b;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .tab.active {
+            background-color: #2b2b2b;
+        }
+
+        .tabs_right {
+            position: absolute;
+            top: 10px;
+            left: calc((100%/7)*3 + 10px);
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+            z-index: 1000;
+        }   
+
+        .display-text {
+            margin-top: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            height: 33.33%;
+            padding: 0px;
+            box-sizing: border-box;
+        
+        }
+        .option {
+            cursor: pointer;
+            flex: 1;
+            padding: 5px 10px;
+            border: 1px solid black;
+            border-radius: 0px;
+        }
+
+        .option + .option {
+            border-left: 1px solid transparent;
+        }
+
+        .controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
+
+        .pointer {
+            width: 10px;
+            height: 10px;
+            border: 3px solid red;
+            border-radius: 50%;
+            background-color: transparent;
+            cursor: pointer;
+        }
+
+        .toggle-button {
+            margin-top: 2px;
+            padding: 1px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+        }
+
+        .toggle-button img {
+            width: 24px;  
+            height: 24px; 
+            object-fit: cover; 
+        }
+
+        .light-button img {
+            width: 15px;  
+            height: 24px; 
+            object-fit: cover; 
+        }
+
+        #annotation-log {
+            margin-top: 10px;
+            background-color: #ffffff;
+            padding: 10px;
+            border: 1px solid #ccc;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        .comment-section {
+            margin-top: 10px;
+        }
+
+        .comment-input {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 5px;
+            box-sizing: border-box;
+        }
+
+        .comment {
+            margin-bottom: 5px;
+            padding-left: 10px;
+            border-left: 2px solid #ccc;
+        }
+
+        .reply {
+            margin-left: 10px;
+            border-left: 2px solid #ccc;
+            padding-left: 10px;
+        }
+
+        .comment-button {
+            padding: 5px 10px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            margin-bottom: 10px;
+        }
+
+        .comment-button:hover {
+            background-color: #0056b3;
+        }
+
+        .comment-date {
+            font-size: 0.8em;
+            color: #777;
+            margin-top: 5px;
+        }
+
+        .filter-section {
+            margin-bottom: 10px;
+        }
+
+        .filter-section input[type="date"],
+        .filter-section input[type="checkbox"] {
+            margin-right: 5px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="tabs_right">
+        <div class="tab active" data-map="height">Height</div>
+        <div class="tab" data-map="plain">Plain hillshade</div>
+        <div class="tab" data-map="contour">Contour</div>
+    </div>
+    <div id='map'>
+        <input type="color" id="color-picker" class="color-picker" onchange="changeColor(this.value)" value="#ff0000">
+    </div>
+    <div id="maps" class="maps">
+        <div id="webgl" class="webgl"></div>
+        <div id="height" class="height"></div>
+        <div id="plain" class="plain" style="display: none;"></div>
+        <!--<div id="contour" class="contour" style="display: none;"></div> -->
+        <div id='annotations' class="annotations">
+            <div class="filter-section">
+                <h3>Filters</h3>
+                <div>
+                    <label for="filter-date">Hide annotations before:</label>
+                    <input type="date" id="filter-date" onchange="filterAnnotations()">
+                </div>
+                <div>
+                    <input type="checkbox" id="filter-urgent" onchange="filterAnnotations()">
+                    <label for="filter-urgent">Urgent</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="filter-consolidated" onchange="filterAnnotations()">
+                    <label for="filter-consolidated">Consolidated</label>
+                </div>
+            </div>
+            <div>
+                <button onclick="exportAnnotations()">Export Annotations</button>
+                <input type="file" id="import-file" onchange="importAnnotations(event)" style="display:none;" />
+                <button onclick="document.getElementById('import-file').click()">Import Annotations</button>
+            </div>
+            <div id='annotation-log'>
+                <h3>Annotation Log</h3>
+                <div id='log-entries'></div>
+            </div>
+        </div>
+    </div>
+    <div id="controls" class="controls">
+        <button onclick="toggleMinimap()"><i class="fa fa-eye"></i></button>
+    </div>
+
+    <script>        
+        document.addEventListener('DOMContentLoaded', function () {
+            const additionalTabs = document.querySelectorAll('.tabs_right .tab');
+            //const additionalMaps = document.querySelectorAll('.height, .contour, .plain');
+            const additionalMaps = document.querySelectorAll('.height, .plain');
+            const additionalNavigator = document.querySelector('.tabs_right');
+
+            let activeAdditionalTab = document.querySelector('.tab.active');
+            additionalTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const mapId = tab.dataset.map;
+                    additionalMaps.forEach(map => {
+                        if (map.id === mapId) {
+                            map.style.display = 'block';
+                        } else {
+                            map.style.display = 'none';
+                        }
+                    });
+
+                    additionalNavigator.style.display = 'flex';
+                    additionalTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    activeAdditionalTab = tab;
+                    mainMaps.forEach(map => {
+                        const mainMapId = activeMainTab.dataset.map;
+                        if (map.id === mainMapId) {
+                            map.style.display = 'block';
+                        }
+                    }); 
+                });
+            });
+        });
+        
+        MapboxDraw.constants.classes.CONTROL_BASE  = 'maplibregl-ctrl';
+        MapboxDraw.constants.classes.CONTROL_PREFIX = 'maplibregl-ctrl-';
+        MapboxDraw.constants.classes.CONTROL_GROUP = 'maplibregl-ctrl-group';
+
+        const terrainExaggeration = 10; // Good with 0.005 interval // 0 to inf
+        const hillshadeExaggeration = 1; // Good with 0.005 interval //0 to 1
+        const terrainTiles = ["../../data-NOBACKUP/mockup-1_test/20240522_101941_stitched_height_terrain/{z}/{y}/{x}.png"]; 
+        const RGBTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_rgb/20240515_103850_stitched_rgb/{z}/{y}/{x}.png"];
+        const heightTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_height_greenscale/{z}/{y}/{x}.png"];
+        const blackTiles = ["../../data-NOBACKUP/mockup-1_test/20240522_black/{z}/{y}/{x}.png"];
+        
+        const terrainTileSize = 256;
+
+        const terrainEncoding = "custom";
+        const interval = 1;
+        const baseShift = 0.0; 
+        const redFactor = 256*256*interval;
+        const greenFactor = 256*interval;
+        const blueFactor = 1.0*interval;
+
+        const webgl = new maplibregl.Map({
+            container: 'webgl',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: RGBTiles,
+                        tileSize: 256,
+                    },
+                    // Use a different source for terrain and hillshade layers, to improve render quality
+                    terrainSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    hillshadeSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm'
+                    },
+                    {
+                        id: 'hills',
+                        type: 'hillshade',
+                        source: 'hillshadeSource',
+                        layout: {visibility: 'visible'},
+                        paint: { // https://maplibre.org/maplibre-style-spec/layers/#hillshade
+                            'hillshade-illumination-anchor': "map", // default "viewport"
+                            'hillshade-illumination-direction': 300, // default 335
+                            'hillshade-highlight-color': '#ffffff', // default "#FFFFFF"
+                            'hillshade-accent-color': '#000000', // default "#000000"
+                            'hillshade-shadow-color': '#000000', // default "#000000"
+                            'hillshade-exaggeration': hillshadeExaggeration // default 0.5
+                        }
+                    }
+                ],
+                terrain: {
+                    source: 'terrainSource',
+                    exaggeration: terrainExaggeration,
+                }
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+            center: [-40, 40]
+        });
+
+        webgl.addControl(new maplibregl.FullscreenControl());
+        webgl.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+        webgl.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration,
+            })
+        );
+
+        webgl.setMaxBounds(webgl.getBounds())
+        webgl.addControl(new HillshadeNAngle(webgl), 'top-right');
+
+        var drawFeatureID = '';
+        var newDrawFeature = false;
+
+        var draw = new MapboxDraw({
+            userProperties: true,
+            controls: {
+                'combine_features': false,
+                'uncombine_features': false,
+            },
+            styles: drawStylesLong
+        })
+
+        webgl.addControl(draw, 'top-right');
+        function changeColor(color) {
+            if (drawFeatureID !== '' && typeof draw === 'object') {
+                draw.setFeatureProperty(drawFeatureID, 'portColor', color);
+                var feat = draw.get(drawFeatureID);
+                draw.add(feat)
+            }
+        }
+
+        var setDrawFeature = function(e) {
+            if (e.features.length && e.features[0].type === 'Feature') {
+                var feat = e.features[0];
+                drawFeatureID = feat.id;
+            }
+        }
+
+        webgl.on('draw.create', function() {
+            newDrawFeature = true;
+        });
+        webgl.on('draw.update', setDrawFeature);
+        webgl.on('draw.selectionchange', setDrawFeature);
+        webgl.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+            }
+            newDrawFeature = false;
+        });
+
+        webgl.on("style.load", function () {
+        webgl.addControl(new maplibregl.Minimap({
+            tiles: RGBTiles,
+            width: "250px",
+            height: "250px",
+            id: 'minimap-control'
+        }), 'top-left');
+        });
+
+        function toggleMinimap() {
+            const minimapElement = document.getElementById('minimap-control');
+            if (minimapElement) {
+                if (minimapElement.style.display === 'none') {
+                    minimapElement.style.display = 'block';
+                } else {
+                    minimapElement.style.display = 'none';
+                }
+            }
+        }
+
+        // calculation works but the values are not yet correct, todo for later..
+        webgl.on('draw.create', updateMeasurements);
+        webgl.on('draw.delete', updateMeasurements);
+        webgl.on('draw.update', updateMeasurements);
+
+        /////////
+        function createScaleControl() {
+            const scaleControl = document.createElement('div');
+            scaleControl.className = 'maplibregl-ctrl maplibregl-ctrl-scale';
+            scaleControl.style.width = '100px';
+            scaleControl.style.backgroundColor = 'rgba(128, 128, 128, 0.5)'; // Gray with 50% transparency
+            scaleControl.style.color = 'white'; // Text color
+            scaleControl.style.padding = '5px';
+            scaleControl.style.position = 'absolute';
+            scaleControl.style.bottom = '10px';
+            scaleControl.style.right = '10px';
+            scaleControl.style.textAlign = 'center';
+            scaleControl.innerHTML = '<span id="scale-value"></span> mm';
+
+            return scaleControl;
+        }
+
+        const mapWidthCm = 16; // Width of the map in centimeters
+        const pixelsPerCm = webgl.transform.width / mapWidthCm;
+
+        // Add custom scale control to bottom right of the map
+        const scaleControl = createScaleControl();
+
+        webgl.on('load', function () {
+            const scaleControlContainer = document.createElement('div');
+            scaleControlContainer.appendChild(scaleControl);
+
+            webgl.getContainer().appendChild(scaleControl);
+
+            // Update scale value based on map zoom
+            function updateScaleValue() {
+                const scaleValue = document.getElementById('scale-value');
+                const zoom = webgl.getZoom();
+                const scale = Math.pow(2, zoom) * pixelsPerCm;
+                scaleValue.textContent = (1 / scale * 10 * 100).toFixed(4); // *10 for cm to mm, realWorldMm for 100px
+            }
+
+            // Update scale value on map load and zoom change
+            webgl.on('zoom', updateScaleValue);
+            updateScaleValue();
+        });
+        ////
+
+        function updateMeasurements(e) {
+            const data = draw.getAll();
+            const lengthAnswer = document.getElementById('calculated-length');
+            if (data.features.length > 0) {
+                let length = 0;
+                data.features.forEach(feature => {
+                    if (feature.geometry.type === 'LineString') {
+                        length = turf.length(feature);
+                    }
+                });
+                const roundedLength = (length/pixelsPerCm*10*3/100).toFixed(5);
+                lengthAnswer.innerHTML = `Line length: ${roundedLength} mm`;
+            } else {
+                lengthAnswer.innerHTML = '';
+                if (e.type !== 'draw.delete')
+                    alert('Click the map to draw a line.');
+            }
+        }
+
+        const height = new maplibregl.Map({
+            container: 'height',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: heightTiles,
+                        tileSize: 256,
+                    },
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm'
+                    },
+                ],
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+            center: [-40, 40]
+        });
+
+        height.addControl(new maplibregl.FullscreenControl());
+        height.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+        height.setMaxBounds(webgl.getBounds())
+
+        const draw2 = new MapboxDraw({
+            displayControlsDefault: false,
+            controls: {
+                point: true,
+                line_string: true,
+                polygon: true,
+                trash: true
+            },
+            styles: drawStylesShort
+        });
+
+        height.addControl(draw2);
+
+        const plain = new maplibregl.Map({
+            container: 'plain',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: blackTiles,
+                        tileSize: 256,
+                    },
+                    terrainSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    hillshadeSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm'
+                    },
+                    {
+                        id: 'hills',
+                        type: 'hillshade',
+                        source: 'hillshadeSource',
+                        layout: {visibility: 'visible'},
+                        paint: { 
+                            'hillshade-illumination-anchor': "map", 
+                            'hillshade-illumination-direction': 300, 
+                            'hillshade-highlight-color': '#ffffff', 
+                            'hillshade-accent-color': '#000000',
+                            'hillshade-shadow-color': '#000000', 
+                            'hillshade-exaggeration': hillshadeExaggeration
+                        }
+                    }
+                ],
+                terrain: {
+                    source: 'terrainSource',
+                    exaggeration: terrainExaggeration,
+                }
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+            center: [-40, 40]
+        });
+
+        plain.addControl(new maplibregl.FullscreenControl());
+        plain.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+        plain.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration,
+            })
+        );
+        plain.addControl(new LightAngleToggleControl(plain), 'top-right');
+
+        const draw3 = new MapboxDraw({
+            displayControlsDefault: false,
+            controls: {
+                point: true,
+                line_string: true,
+                polygon: true,
+                trash: true
+            },
+            styles: drawStylesShort
+        });
+
+        plain.addControl(draw3);
+        plain.setMaxBounds(webgl.getBounds())        
+        
+        const contour = new maplibregl.Map({
+            container: 'contour',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: blackTiles,
+                        tileSize: 256,
+                    },
+                    // Use a different source for terrain and hillshade layers, to improve render quality
+                    terrainSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    hillshadeSource: {
+                        type: 'raster-dem',
+                        tiles: heightTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm'
+                    },
+                    {
+                        id: 'hills',
+                        type: 'hillshade',
+                        source: 'hillshadeSource',
+                        layout: {visibility: 'visible'},
+                        paint: { // https://maplibre.org/maplibre-style-spec/layers/#hillshade
+                            'hillshade-illumination-anchor': "map", // default "viewport"
+                            'hillshade-illumination-direction': 300, // default 335
+                            'hillshade-highlight-color': '#ffffff', // default "#FFFFFF"
+                            'hillshade-accent-color': '#000000', // default "#000000"
+                            'hillshade-shadow-color': '#000000', // default "#000000"
+                            'hillshade-exaggeration': hillshadeExaggeration // default 0.5
+                        }
+                    }
+                ],
+                terrain: {
+                    source: 'terrainSource',
+                    exaggeration: terrainExaggeration,
+                }
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+            center: [-40, 40]
+        });
+
+        contour.addControl(new maplibregl.FullscreenControl());
+        contour.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+        contour.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration,
+            })
+        );
+
+        contour.setMaxBounds(contour.getBounds())
+        contour.addControl(new LightAngleToggleControl(contour), 'top-right');
+
+        var draw_contour = new MapboxDraw({
+            userProperties: true,
+            controls: {
+                'combine_features': false,
+                'uncombine_features': false,
+            },
+            styles: drawStylesLong
+        })
+
+        contour.addControl(draw_contour);
+
+        syncMaps(webgl, height);
+        syncMaps(webgl, plain);
+        syncMaps(webgl, contour);
+        var el = document.createElement('div');
+        el.className = 'pointer';
+        var marker = new mapboxgl.Marker(el, {anchor:'center'});
+
+        webgl.on("mousemove", function (e) {
+            marker.setLngLat(e.lngLat).addTo(height);
+        });
+        height.on("mousemove", function (e) {
+            marker.setLngLat(e.lngLat).addTo(webgl);
+        });
+        plain.on("mousemove", function (e) {
+            marker.setLngLat(e.lngLat).addTo(webgl);
+        });
+        contour.on("mousemove", function (e) {
+            marker.setLngLat(e.lngLat).addTo(webgl);
+        });
+
+
+        var el2 = document.createElement('div');
+        var el3 = document.createElement('div');
+        el2.className = 'pointer';
+        el3.className = 'pointer';
+        var marker2 = new mapboxgl.Marker(el2, {anchor:'center'});
+        var marker3 = new mapboxgl.Marker(el3, {anchor:'center'});
+        webgl.on("mousemove", function (e) {
+            marker2.setLngLat(e.lngLat).addTo(plain);
+        });
+        webgl.on("mousemove", function (e) {
+            marker3.setLngLat(e.lngLat).addTo(contour);
+        });
+
+        setupMap(webgl, height);
+        setupMap(height, webgl);
+        setupMap(webgl, plain);
+        setupMap(height, plain);
+        setupMap(plain, webgl);
+        setupMap(plain, height);
+        setupMap(webgl, contour);
+        setupMap(height, contour);
+        setupMap(plain, contour);
+        setupMap(contour, webgl);
+        setupMap(contour, height);
+        setupMap(contour, plain);
+     
+        function addXYDisplay(map) {
+            map.on('mousemove', function (e) {
+                const x = (e.point.x.toFixed(2)/pixelsPerCm*10).toFixed(2);
+                const y = (e.point.y.toFixed(2)/pixelsPerCm*10).toFixed(2);
+                document.getElementById('xyDisplay').innerHTML = `X: ${x}mm, Y: ${y}mm`;
+            });
+        }
+
+        addXYDisplay(webgl);
+        addXYDisplay(height);
+        addXYDisplay(contour);
+        addXYDisplay(plain); 
+
+        function getCurrentDate() {
+            var date = new Date();
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        function logAnnotation(action, feature) {
+            var logEntries = document.getElementById('log-entries');
+            var logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.dataset.date = feature.properties.creationDate || new Date().toISOString().split('T')[0]; // Store date in YYYY-MM-DD format
+            logEntry.dataset.urgent = false;
+            logEntry.dataset.consolidated = false;
+
+            // Check if user wants to provide a title
+            var title = feature.properties.title ? feature.properties.title : feature.id;
+
+            logEntry.innerHTML = `
+                <div>
+                    <input type="text" id="title-input-${feature.id}" class="title-input" value="${title}" onchange="changeTitle('${feature.id}', this.value)">
+                </div>
+                <div onclick="selectFeature('${feature.id}')">Type: ${feature.geometry.type}</div>
+                <div>Created on: ${logEntry.dataset.date}</div>
+                <div>
+                    <input type="checkbox" id="urgent-${feature.id}" name="urgent-${feature.id}" onchange="updateAnnotationStatus('${feature.id}', 'urgent', this.checked)">
+                    <label for="urgent-${feature.id}">Urgent</label><br>
+                    <input type="checkbox" id="validated-${feature.id}" name="consolidated-${feature.id}" onchange="updateAnnotationStatus('${feature.id}', 'consolidated', this.checked)">
+                    <label for="consolidated-${feature.id}">Consolidated</label><br>
+                </div>
+                <div class="comment-section" id="comment-section-${feature.id}">
+                    <input type="text" id="comment-input-${feature.id}" class="comment-input" placeholder="Add a comment">
+                    <button class="comment-button" onclick="addComment('${feature.id}')">Comment</button>
+                    <div id="comments-${feature.id}"></div>
+                </div>
+            `;
+            logEntries.prepend(logEntry);
+        }
+
+        function changeTitle(featureId, newTitle) {
+            var feature = draw.get(featureId);
+            if (feature) {
+                draw.delete([featureId]);
+                feature.id = newTitle;
+                draw.add(feature);
+
+                // Update the log entry
+                var logEntry = document.querySelector(`.log-entry input#title-input-${featureId}`).closest('.log-entry');
+                logEntry.querySelector('.title-input').id = `title-input-${newTitle}`;
+                logEntry.querySelector('.title-input').value = newTitle;
+                logEntry.querySelector('div[onclick]').setAttribute('onclick', `selectFeature('${newTitle}')`);
+                logEntry.querySelector('#urgent-' + featureId).id = `urgent-${newTitle}`;
+                logEntry.querySelector('label[for="urgent-' + featureId + '"]').setAttribute('for', `urgent-${newTitle}`);
+                logEntry.querySelector('#validated-' + featureId).id = `validated-${newTitle}`;
+                logEntry.querySelector('label[for="consolidated-' + featureId + '"]').setAttribute('for', `validated-${newTitle}`);
+                logEntry.querySelector('#comment-section-' + featureId).id = `comment-section-${newTitle}`;
+                logEntry.querySelector('#comment-input-' + featureId).id = `comment-input-${newTitle}`;
+                logEntry.querySelector('#comments-' + featureId).id = `comments-${newTitle}`;
+                logEntry.setAttribute('data-id', newTitle);
+            }
+        }
+
+        function updateAnnotationStatus(featureId, statusType, statusValue) {
+            var logEntry = document.querySelector(`.log-entry input#title-input-${featureId}`).closest('.log-entry');
+            logEntry.dataset[statusType] = statusValue;
+            filterAnnotations();
+        }
+
+        function deleteComment(commentElement) {
+            commentElement.remove();
+        }
+
+        function deleteReply(replyElement) {
+            replyElement.remove();
+        }
+
+        function addComment(featureId, parentId = null) {
+            var commentInput = document.getElementById(`comment-input-${featureId}`);
+            var commentText = commentInput.value.trim();
+
+            if (commentText) {
+                var commentsDiv = document.getElementById(`comments-${featureId}`);
+                var comment = document.createElement('div');
+                comment.className = parentId ? 'comment reply' : 'reply';
+                comment.innerHTML = `
+                    <div>${commentText}</div>
+                    <div class="comment-date">${getCurrentDate()}</div>
+                    <input type="text" class="comment-input reply-input" placeholder="Reply">
+                    <button class="comment-button reply-button" onclick="addReply('${featureId}', this)">Reply</button>
+                    <button class="comment-delete" onclick="deleteComment(this.parentElement)">Delete</button>
+                `;
+
+                if (parentId) {
+                    var parentComment = document.getElementById(parentId);
+                    parentComment.appendChild(comment);
+                } else {
+                    commentsDiv.appendChild(comment);
+                }
+
+                commentInput.value = '';
+            }
+        }
+
+        function addReply(featureId, replyButton) {
+            var replyInput = replyButton.previousElementSibling;
+            var replyText = replyInput.value.trim();
+
+            if (replyText) {
+                var reply = document.createElement('div');
+                reply.className = 'comment reply';
+                reply.innerHTML = `
+                    <div>${replyText}</div>
+                    <div class="comment-date">${getCurrentDate()}</div>
+                    <button class="reply-delete" onclick="deleteReply(this.parentElement)">Delete</button>
+                `;
+
+                replyButton.parentElement.appendChild(reply);
+                replyInput.value = '';
+            }
+        }
+
+        function selectFeature(featureId) {
+            var feature = draw.get(featureId);
+            if (feature && feature.geometry && feature.geometry.coordinates) {
+                var coordinates = feature.geometry.coordinates;
+                var center;
+                
+                if (feature.geometry.type === 'Point') {
+                    center = {
+                        lng: coordinates[0],
+                        lat: coordinates[1]
+                    };
+                } else if (feature.geometry.type === 'LineString') {
+                    center = calculateCentroid_line(coordinates, 'LineString');
+                }
+
+                else if (feature.geometry.type === 'Polygon') {
+                    center = calculateCentroid_polygon(coordinates, 'Polygon');
+                }
+
+                if (center) {
+                    webgl.flyTo({
+                        center: center,
+                        zoom: 3,
+                        essential: true
+                    });
+                } else {
+                    console.error('Invalid coordinates:', coordinates);
+                }
+            } else {
+                console.error('Invalid feature or feature geometry:', feature);
+            }
+        }
+
+        function calculateCentroid_line(coordinates) {
+            var totalPoints = coordinates.length;
+            var x = 0, y = 0;
+            coordinates.forEach(function(point) {
+                x += point[0];
+                y += point[1];
+            });
+            return {
+                lng: x / totalPoints,
+                lat: y / totalPoints
+            };
+        }
+
+        function calculateCentroid_polygon(coordinates) {
+            var totalPoints = coordinates[0].length; // Total number of points in the polygon
+            var x = 0, y = 0;
+
+            // Sum up all the coordinates
+            coordinates[0].forEach(function(point) {
+                x += point[0];
+                y += point[1];
+            });
+
+            // Calculate the average
+            var centerX = x / totalPoints;
+            var centerY = y / totalPoints;
+
+            return {
+                lng: centerX,
+                lat: centerY
+            };
+        }
+
+        function filterAnnotations() {
+            var filterDate = document.getElementById('filter-date').value;
+            var filterUrgent = document.getElementById('filter-urgent').checked;
+            var filterConsolidated = document.getElementById('filter-consolidated').checked;
+
+            var logEntries = document.querySelectorAll('.log-entry');
+            logEntries.forEach(function (logEntry) {
+                var entryDate = logEntry.dataset.date;
+                var entryUrgent = logEntry.dataset.urgent === 'true';
+                var entryConsolidated = logEntry.dataset.consolidated === 'true';
+
+                var dateMatch = !filterDate || new Date(entryDate) >= new Date(filterDate);
+                var urgentMatch = !filterUrgent || entryUrgent;
+                var consolidatedMatch = !filterConsolidated || entryConsolidated;
+
+                if (dateMatch && urgentMatch && consolidatedMatch) {
+                    logEntry.style.display = 'block';
+                } else {
+                    logEntry.style.display = 'none';
+                }
+            });
+        }
+
+        webgl.on('draw.create', function(e) {
+            var feature = e.features[0];
+            var creationDateTime = new Date().toISOString(); // Get current datetime in ISO format
+            feature.properties.creationDateTime = creationDateTime; // Add creation datetime to feature properties
+            feature.properties.creationDate = creationDateTime.split('T')[0]; // Extract date part and add it to feature properties
+            logAnnotation('Created', feature);
+        });
+
+        var setDrawFeature = function(e) {
+            if (e.action === 'draw.create' && e.features.length && e.features[0].type === 'Feature') {
+                var feature = e.features[0];
+                feature.properties.creationDate = new Date().toISOString().split('T')[0];
+                logAnnotation('Created', feature);
+            }
+        };
+
+        webgl.on('draw.update', setDrawFeature);
+        webgl.on('draw.delete', function(e) {
+            e.features.forEach(function(feature) {
+                // Find the corresponding log entry
+                var logEntry = document.querySelector(`.log-entry input#title-input-${feature.id}`).closest('.log-entry');
+                // Remove the log entry if it exists
+                if (logEntry) {
+                    logEntry.remove();
+                }
+            });
+        });
+        webgl.on('draw.selectionchange', setDrawFeature);
+        webgl.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+
+                //if another drawFeature is not found - reset drawFeatureID
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+            }
+
+            newDrawFeature = false;
+        });
+
+        function createScaleControl() {
+            const scaleControl = document.createElement('div');
+            scaleControl.className = 'maplibregl-ctrl maplibregl-ctrl-scale';
+            scaleControl.style.width = '100px';
+            scaleControl.style.backgroundColor = 'rgba(128, 128, 128, 0.5)'; // Gray with 50% transparency
+            scaleControl.style.color = 'white'; // Text color
+            scaleControl.style.padding = '5px';
+            scaleControl.style.position = 'absolute';
+            scaleControl.style.bottom = '10px';
+            scaleControl.style.right = '10px';
+            scaleControl.style.textAlign = 'center';
+            scaleControl.innerHTML = '<span id="scale-value"></span> mm';
+
+            return scaleControl;
+        }
+
+        webgl.on('load', function () {
+            const scaleControlContainer = document.createElement('div');
+            scaleControlContainer.appendChild(scaleControl);
+
+            webgl.getContainer().appendChild(scaleControl);
+
+            // Update scale value based on map zoom
+            function updateScaleValue() {
+                const scaleValue = document.getElementById('scale-value');
+                const zoom = webgl.getZoom();
+                const scale = Math.pow(2, zoom) * pixelsPerCm;
+                scaleValue.textContent = (1 / scale * 10 * 100).toFixed(4); // *10 for cm to mm, realWorldMm for 100px
+            }
+
+            // Update scale value on map load and zoom change
+            webgl.on('zoom', updateScaleValue);
+            updateScaleValue();
+            
+        });
+
+        function exportAnnotations() {
+            var annotations = [];
+            var logEntries = document.querySelectorAll('.log-entry');
+
+            logEntries.forEach(function (logEntry) {
+                var featureId = logEntry.querySelector('.title-input').id.split('-')[2];
+                var feature = draw.get(featureId);
+
+                if (feature) {
+                    var comments = [];
+                    logEntry.querySelectorAll('.comment, .reply').forEach(function (commentElement) {
+                        comments.push({
+                            text: commentElement.querySelector('div').innerText,
+                            date: commentElement.querySelector('.comment-date').innerText,
+                            parentId: commentElement.classList.contains('comment') ? commentElement.closest('.comment').querySelector('div').innerText : null
+                        });
+                    });
+
+                    feature.properties.creationDate = new Date().toISOString().split('T')[0];
+
+                    annotations.push({
+                        feature: feature,
+                        creationDate: feature.properties.creationDate, // Include creation date here
+                        urgent: logEntry.dataset.urgent === 'true',
+                        consolidated: logEntry.dataset.consolidated === 'true',
+                        comments: comments,
+                    });
+                }
+            });
+
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(annotations));
+            var downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "annotations.json");
+            document.body.appendChild(downloadAnchorNode); 
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+
+        function importAnnotations(event) {
+            var file = event.target.files[0];
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var annotations = JSON.parse(e.target.result);
+                annotations.forEach(function (annotation) {
+                    // Add the feature to the map
+                    draw.add(annotation.feature);
+                    logAnnotation('Imported', annotation.feature);
+
+                    var logEntry = document.querySelector(`.log-entry input#title-input-${annotation.feature.id}`).closest('.log-entry');
+
+                    // Restore the urgent and consolidated status
+                    document.getElementById(`urgent-${annotation.feature.id}`).checked = annotation.urgent;
+                    document.getElementById(`validated-${annotation.feature.id}`).checked = annotation.consolidated;
+                    logEntry.dataset.urgent = annotation.urgent;
+                    logEntry.dataset.consolidated = annotation.consolidated;
+
+                    // Restore the comments and replies
+                    var commentsDiv = document.getElementById(`comments-${annotation.feature.id}`);
+                    annotation.comments.forEach(function (comment) {
+                        var commentsDiv = document.getElementById(`comments-${annotation.feature.id}`);
+                        var commentElement = document.createElement('div');
+                        commentElement.className = comment.parentId ? 'comment reply' : 'comment';
+                        commentElement.innerHTML = `
+                            <div>${comment.text}</div>
+                            <div class="comment-date">${comment.date}</div>
+                            <input type="text" class="comment-input reply-input" placeholder="Reply">
+                            <button class="comment-button reply-button" onclick="addReply('${annotation.feature.id}', this)">Reply</button>
+                        `;
+
+                        if (comment.parentId) {
+                            var parentComment = findParentComment(commentsDiv, comment.parentId);
+                            if (parentComment) {
+                                parentComment.appendChild(commentElement);
+                            } else {
+                                commentsDiv.appendChild(commentElement);
+                            }
+                        } else {
+                            commentsDiv.appendChild(commentElement);
+                        }
+                    });
+
+                    function findParentComment(container, parentId) {
+                        var commentElements = container.querySelectorAll('.comment');
+                        for (var i = 0; i < commentElements.length; i++) {
+                            if (commentElements[i].querySelector('div').innerText === parentId) {
+                                return commentElements[i];
+                            }
+                        }
+                        return null;
+                    }
+                });
+            };
+            reader.readAsText(file);
+        }
+
+    </script>
+
+    <div id="xyDisplay" style="position: absolute; bottom: 10px; left: 10px; color: white;"></div>
+    <div id="calculated-length" style="position: absolute; bottom: 10px; left: 185px; color: white;"> Line length: </div>
+</body>
+</html>

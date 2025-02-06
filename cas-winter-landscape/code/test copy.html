@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaplibreGL Polylines</title>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css" rel="stylesheet">
+    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.4/mapbox-gl-draw.js'></script>
+    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.4/mapbox-gl-draw.css' type='text/css' />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.5/proj4.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" rel="stylesheet" />
+
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script>
+    mapboxgl.accessToken = "pk.eyJ1Ijoic2VsZW5lY29kZXMiLCJhIjoiY2t2aDdteThhM3RwdTJxb2syZjZqbjd0dCJ9.BtnrFEPsWw_qShFqR8DY3w";
+
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'https://openmaptiles.geo.data.gouv.fr/styles/osm-bright/style.json', // Example style
+        center: [1.4620979564329332, 0.5582304278461185], // Center of the map
+        zoom: 3 // Initial zoom level
+    });
+
+    // Initialize the draw control
+    var draw = new MapboxDraw({
+        displayControlsDefault: false,
+        controls: {
+            line_string: true,
+            point: true,
+            polygon: true,
+            trash: true
+        }
+    });
+
+    // Add draw control to the map
+    map.addControl(draw);
+
+    // Function to load and add polylines from CSV
+    function addPolylinesFromCSV() {
+        fetch('data/test_2.csv')
+            .then(response => response.text())
+            .then(data => {
+                // Parse CSV data
+                let lines = parseCSV(data);
+
+                // Convert Mercator to Lat-Lng and add to map
+                lines.forEach(line => {
+                    let coordinate = convertMercatorToLatLng(line.polylines_mercator[0][0]);
+
+                    new mapboxgl.Marker()
+                        .setLngLat(coordinate) // Center coordinates
+                        .addTo(map);
+                    
+                    let polylineCoords = []
+                    let lineStrings = line.polylines_mercator
+                    lineStrings.forEach(lineString =>{
+                        let lineString_coord = lineString[0];
+                        let converted_coord = convertMercatorToLatLng(lineString_coord);
+                        polylineCoords.push(converted_coord);
+                    })
+                    
+                    if (polylineCoords.length > 1) {
+                        let feature = {
+                            type: 'Feature',
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: polylineCoords
+                            },
+                            properties: {
+                                component: parseInt(line.component),
+                                rb: parseFloat(line.rb),
+                                s2: parseFloat(line.s2),
+                                ecc: parseFloat(line.ecc),
+                                tophat: parseFloat(line.tophat),
+                                similar: JSON.parse(line.similar)
+                            }
+                        };                   
+                        draw.add(feature);
+                    }
+                });
+            })
+            .catch(error => console.error('Error loading CSV:', error));
+    }
+
+    function parseCSV(csvData) {
+        let lines = [];
+        // Split by lines and parse each line
+        csvData.split('\n').forEach((line, index) => {
+            if (index === 0) return; // Skip header if present
+            let columns = line.split(';');
+
+            if (columns.length > 7) {
+                let polylineStr = columns[7].trim();
+                try {
+                    let polyline = {
+                        component: columns[0],
+                        polylines_mercator: JSON.parse(polylineStr.replace(/array\(/g, '[').replace(/\)/g, ']')),
+                        rb: columns[1],
+                        s2: columns[2],
+                        ecc: columns[3],
+                        tophat: columns[4],
+                        similar: columns[5]
+                    };
+                    lines.push(polyline);
+                } catch (e) {
+                    console.error('Error parsing line', index, e);
+                }
+            }
+        });
+        return lines;
+    }
+
+    function convertMercatorToLatLng(mercatorCoords) {
+        let mercatorTrue = new maplibregl.MercatorCoordinate(mercatorCoords[0], mercatorCoords[1], 0)
+        let latLng_test = mercatorTrue.toLngLat()
+        let coordinates = [latLng_test.lng, latLng_test.lat]
+
+        return coordinates;        
+    }
+
+     // Call function to add polylines from CSV after map is loaded
+     map.on('load', function() {
+        addPolylinesFromCSV();
+    });
+
+</script>
+
+</body>
+</html>

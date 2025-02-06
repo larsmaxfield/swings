@@ -1,0 +1,332 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>3D Colormap</title>
+    <meta property="og:description" content="Show elevation with a colormap in 3D." />
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel='stylesheet' href='./pkg/ASML-own/maplibre-gl/maplibre-gl.css' />
+    <script src='./pkg/ASML-own/maplibre-gl/maplibre-gl.js'></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    
+        html, body, #map {
+            height: 100%;
+        }
+    
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0);
+        }
+    
+        .slider-container {
+            margin: 10px 0;
+            position: relative;
+            width: 100px;  /* Change width to 200px */
+            height: 50px;  /* Set height to 50px */
+        }
+    
+        .slider-track {
+            width: 100%;
+            height: 5px;
+            position: absolute;
+            margin: auto;
+            top: 0;
+            bottom: 0;
+            border-radius: 5px;
+        }
+    
+        input[type="range"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 100%;
+            outline: none;
+            position: absolute;
+            background-color: transparent;
+            pointer-events: none;
+            height: 50px;  /* Set height to 50px */
+        }
+    
+        input[type="range"]::-webkit-slider-runnable-track {
+            -webkit-appearance: none;
+            height: 5px;
+        }
+    
+        input[type="range"]::-moz-range-track {
+            -moz-appearance: none;
+            height: 5px;
+        }
+    
+        input[type="range"]::-ms-track {
+            appearance: none;
+            height: 5px;
+        }
+    
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 1.7em;
+            width: 1.7em;
+            background-color: #acacac;
+            cursor: pointer;
+            pointer-events: auto;
+            border-radius: 50%;
+            margin-top: -16px;  /* Adjust to align thumb within new height */
+        }
+    
+        input[type="range"]::-moz-range-thumb {
+            -webkit-appearance: none;
+            height: 1.7em;
+            width: 1.7em;
+            cursor: pointer;
+            border-radius: 100%;
+            background-color: #000000;
+            pointer-events: auto;
+            border: none;
+            margin-top: -16px;  /* Adjust to align thumb within new height */
+        }
+    
+        input[type="range"]::-ms-thumb {
+            appearance: none;
+            height: 1.7em;
+            width: 1.7em;
+            cursor: pointer;
+            border-radius: 100%;
+            background-color: #acacac;
+            pointer-events: auto;
+            margin-top: -16px;  /* Adjust to align thumb within new height */
+        }
+    
+        input[type="range"]:active::-webkit-slider-thumb {
+            background-color: #ffffff;
+            border: 1px solid #acacac;
+        }
+    
+        .values {
+            background-color: #acacac;
+            width: 100%;
+            position: relative;
+            margin: auto;
+            padding: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 15px;
+            color: #ffffff;
+        }
+    
+        .values:before {
+            content: "";
+            position: absolute;
+            height: 0;
+            width: 0;
+            border-top: 15px solid #acacac;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            margin: auto;
+            bottom: -14px;
+            left: 0;
+            right: 0;
+        }
+    </style>
+</head>
+<body>
+<div id="map">
+    <div id="controls">
+        <div class="values">
+            <span id="breakpoint-low-value">0</span> &dash; <span id="breakpoint-high-value">8000</span>
+        </div>
+        <div class="slider-container">
+            <div class="slider-track"></div>
+            <input type="range" min="0" max="8000" value="0" id="slider-1" oninput="slideOne()">
+            <input type="range" min="0" max="8000" value="8000" id="slider-2" oninput="slideTwo()">
+        </div>
+    </div>
+</div>
+<script>
+    const terrainExaggeration = 1.0;
+    const terrainEncoding = "custom";
+    const interval = 1.0;
+    const baseShift = 32768.0;
+    const redFactor = 256.0 * interval;
+    const greenFactor = interval;
+    const blueFactor = interval / 256.0;
+
+    const viridisShaderFunction = `
+        vec4 colormap(float t) {
+            const vec3 c0 = vec3(0.2777273272234177, 0.005407344544966578, 0.3340998053353061);
+            const vec3 c1 = vec3(0.1050930431085774, 1.404613529898575, 1.384590162594685);
+            const vec3 c2 = vec3(-0.3308618287255563, 0.214847559468213, 0.09509516302823659);
+            const vec3 c3 = vec3(-4.634230498983486, -5.799100973351585, -19.33244095627987);
+            const vec3 c4 = vec3(6.228269936347081, 14.17993336680509, 56.69055260068105);
+            const vec3 c5 = vec3(4.776384997670288, -13.74514537774601, -65.35303263337234);
+            const vec3 c6 = vec3(-5.435455855934631, 4.645852612178535, 26.3124352495832);
+            return vec4(c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6))))), 1.0);
+        }
+    `;
+
+    const map = (window.map = new maplibregl.Map({
+        validateStyle: false,
+        container: 'map',
+        zoom: 12,
+        center: [11.39085, 47.27574],
+        pitch: 52,
+        hash: true,
+        renderWorldCopies: false,
+        style: {
+            version: 8,
+            sources: {
+                rgb: {
+                    type: 'raster',
+                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    maxzoom: 19
+                },
+                terrainSource: {
+                    type: 'raster-dem',
+                    url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
+                    tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    encoding: terrainEncoding,
+                    redFactor: redFactor,
+                    greenFactor: greenFactor,
+                    blueFactor: blueFactor,
+                    baseShift: baseShift,
+                },
+                elevationSource: {
+                    type: 'raster-dem',
+                    url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
+                    tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    encoding: terrainEncoding,
+                    redFactor: redFactor,
+                    greenFactor: greenFactor,
+                    blueFactor: blueFactor,
+                    baseShift: baseShift,
+                },
+                hillshadeSource: {
+                    type: 'raster-dem',
+                    url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
+                    tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    encoding: terrainEncoding,
+                    redFactor: redFactor,
+                    greenFactor: greenFactor,
+                    blueFactor: blueFactor,
+                    baseShift: baseShift,
+                },
+            },
+            layers: [
+                {
+                    id: 'elevs',
+                    type: 'elevation',
+                    source: 'elevationSource',
+                    layout: {visibility: 'visible'},
+                    paint: {
+                        'elevation-colormap-breakpoint-low': 0,
+                        'elevation-colormap-breakpoint-high': 8000,
+                        'elevation-colormap-function': viridisShaderFunction,
+                        'elevation-colormap-lowcutoff': -100,
+                        'elevation-colormap-lowcutoff-color': '#ffffff00',
+                    },
+                },
+                {
+                    id: 'rgb',
+                    type: 'raster',
+                    source: 'rgb',
+                    layout: {visibility: 'none'},
+                    paint: {
+                        'raster-opacity': 0.2,
+                        'raster-resampling': 'nearest',
+                    }
+                },
+                {
+                    id: 'hills',
+                    type: 'hillshade',
+                    source: 'hillshadeSource',
+                    paint: {
+                        'hillshade-exaggeration': 0.2,
+                        'hillshade-illumination-anchor': 'map',
+                        'hillshade-shadow-color': '#000000',
+                    }
+                },
+            ],
+            terrain: {
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration
+            }
+        },
+        maxZoom: 18,
+        maxPitch: 85
+    }));
+
+    map.addControl(new maplibregl.NavigationControl({
+        visualizePitch: true,
+        showZoom: true,
+        showCompass: true
+    }));
+
+    map.addControl(new maplibregl.TerrainControl({
+        source: 'terrainSource',
+        exaggeration: 1
+    }));
+
+    window.onload = function () {
+        slideOne();
+        slideTwo();
+    };
+
+    let sliderOne = document.getElementById("slider-1");
+    let sliderTwo = document.getElementById("slider-2");
+    let displayValOne = document.getElementById("breakpoint-low-value");
+    let displayValTwo = document.getElementById("breakpoint-high-value");
+    let minGap = 0;
+    let sliderTrack = document.querySelector(".slider-track");
+    let sliderMaxValue = document.getElementById("slider-1").max;
+
+    function slideOne() {
+        if (parseInt(sliderTwo.value) - parseInt(sliderOne.value) <= minGap) {
+            sliderOne.value = parseInt(sliderTwo.value) - minGap;
+        }
+        displayValOne.textContent = sliderOne.value;
+        fillColor();
+        updateMapBreakpoints();
+    }
+
+    function slideTwo() {
+        if (parseInt(sliderTwo.value) - parseInt(sliderOne.value) <= minGap) {
+            sliderTwo.value = parseInt(sliderOne.value) + minGap;
+        }
+        displayValTwo.textContent = sliderTwo.value;
+        fillColor();
+        updateMapBreakpoints();
+    }
+
+    function fillColor() {
+        let percent1 = (sliderOne.value / sliderMaxValue) * 100;
+        let percent2 = (sliderTwo.value / sliderMaxValue) * 100;
+        sliderTrack.style.background = `linear-gradient(to right, #dadae5 ${percent1}% , #000000 ${percent1}% , #000000 ${percent2}%, #dadae5 ${percent2}%)`;
+    }
+
+    function updateMapBreakpoints() {
+        const low = parseFloat(sliderOne.value);
+        const high = parseFloat(sliderTwo.value);
+
+        map.setPaintProperty('elevs', 'elevation-colormap-breakpoint-low', low);
+        map.setPaintProperty('elevs', 'elevation-colormap-breakpoint-high', high);
+    }
+
+    fillColor();
+</script>
+</body>
+</html>

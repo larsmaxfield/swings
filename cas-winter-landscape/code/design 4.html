@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design 4</title>
+
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.js'></script>
+    <link href='.pkg/mapbox@1.13.0/mapbox-gl.css' rel='stylesheet' /> 
+    <link rel='stylesheet' href='./pkg/ASML-own/maplibre-gl/maplibre-gl.css' />
+    <script src='./pkg/ASML-own/maplibre-gl/maplibre-gl.js'></script>
+    <script src='./pkg/zingchart.js'></script>
+
+    <link rel="stylesheet" href="./pkg/leaflet@1.7.1/leaflet.css" crossorigin=""/>
+    <script src="./pkg/leaflet@1.7.1/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.css" crossorigin=""/>
+    <script src="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.min.js" crossorigin=""></script>
+    <script src='./pkg/maplibre-control-minimap/mapboxgl-control-minimap.js'></script>
+    <script src="./pkg/regenerator-runtime@0.14.0/runtime.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="./pkg/leaflet-minimap/Control.MiniMap.css"/>
+    <script src="./pkg/leaflet-minimap/Control.MiniMap.js"></script>
+    <script src="./pkg/maplibre-syncMaps/syncMaps.js"></script>
+    <script src="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.js"></script>
+    <link rel="stylesheet" href="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.css" type="text/css"/>
+     
+    <script src="./pkg/ASML-own/setupMap.js"></script>
+    <script src="./pkg/ASML-own/drawStylesLong.js"></script>
+    <script src="./pkg/ASML-own/drawStylesShort.js"></script>
+    <script src="./pkg/ASML-own/ExaggerationControl.js"></script>
+    <script src="./pkg/ASML-own/LightAngleToggleControl.js"></script>
+    <script src="./pkg/ASML-own/HillshadeNAngle.js"></script>
+    <script src="./pkg/ASML-own/annotations.js"></script>
+    <script src="./pkg/ASML-own/scale_context.js"></script>
+    <script src="./pkg/ASML-own/drawChart.js"></script>
+    <link rel="stylesheet" href="./pkg/ASML-own/style.css"/>
+    
+</head>
+<body>
+    <div class="tabs_right">
+        <div class="tab active" data-map="height">Height</div>
+        <div class="tab" data-map="plain">Plain hillshade</div>
+    </div>
+    <div id='map'>
+        <input type="color" id="color-picker" class="color-picker" onchange="changeColor(this.value)" value="#ffffff">
+    </div>
+    <div id="maps" class="maps">
+        <div id="webgl" class="webgl"></div>
+        <div id="height" class="height"></div>
+        <div id="plain" class="plain" style="display: none;"></div>
+        <div id='annotations' class="annotations">
+            <h3>Tools for height crossection</h3>
+            <button id="startButton1" onClick="startRoute(1)">START Route 1</button>
+            <button id="closeButton1" onClick="closeRoute(1)">FINISH Route 1</button>
+            <button id="startButton2" onClick="startRoute(2)">START Route 2</button>
+            <button id="closeButton2" onClick="closeRoute(2)">FINISH Route 2</button>
+            <button onClick="clearRoute()">CLEAR</button>
+            <h3>Annotations</h3>
+            <input type="text" id="username-input" placeholder="Enter your username" oninput="updateUsername()">
+            <button id="toggle-btn">Toggle User-detected Annotations</button>
+            <button class="toggle-btn" onclick="toggleLayers()">Toggle Auto-detected Annotations</button>
+            <button class="measure-button" onclick="toggleMeasurement()">Toggle Measurement Tool</button>
+            <div class="filter-section">
+                <div>
+                    <label for="filter-date">Hide annotations before:</label>
+                    <input type="date" id="filter-date" onchange="filterAnnotations()">
+                </div>
+                <div>
+                    <input type="checkbox" id="filter-urgent" onchange="filterAnnotations()">
+                    <label for="filter-urgent">Urgent</label>
+                    <input type="checkbox" id="filter-consolidated" onchange="filterAnnotations()">
+                    <label for="filter-consolidated">Consolidated</label>
+                </div>
+            </div>
+            <div>
+                <button onclick="exportAnnotations()">Export Annotations</button>
+                <input type="file" id="import-file" onchange="importAnnotations(event)" style="display:none;" />
+                <button onclick="document.getElementById('import-file').click()">Import Annotations</button>
+            </div>
+            <div id='auto-detected-log'>
+                <h3>Auto Detected Log</h3>
+                <div>
+                    <label for="filter-verified">Show verified cracks:</label>
+                    <input type="checkbox" id="filter-verified" onchange="filterAutomatedCracks()">
+                    <label for="filter-not-verified">Show only not verified:</label>
+                    <input type="checkbox" id="filter-not-verified" onchange="filterAutomatedCracks()">
+                </div>
+                <div id='automated-cracks-entries'></div>
+            </div>
+            <div id='annotation-log'>
+                <h3>Annotation Log</h3>
+                <div>
+                    <input type="text" id="search-input" oninput="searchAnnotations()" placeholder="Search by title">
+                </div>
+                <div id='log-entries'></div>
+            </div>
+        </div>
+    </div>
+    <div id="myChart"></div>
+    <div id="controls" class="controls">
+        <button onclick="toggleMinimap()"><i class="fa fa-eye"></i></button>
+    </div>
+    <div id="controls2">
+        <div class="values">
+            <span id="breakpoint-low-value">10000</span> &dash; <span id="breakpoint-high-value">27000</span>
+        </div>
+        <div class="slider-container">
+            <div class="slider-track"></div>
+            <input type="range" min="1" max="65535" value="10000" id="slider-1" onmouseup="slideOne()">
+            <input type="range" min="2" max="65536" value="27000" id="slider-2" onmouseup="slideTwo()">
+        </div>
+    </div>
+    <div id="xyDisplay" style="position: absolute; bottom: 10px; left: 10px; color: white;"></div>
+    <div id="calculated-length" style="position: absolute; bottom: 10px; left: 185px; color: white;"> Distance: </div>
+    <script>       
+        document.addEventListener('DOMContentLoaded', function () {
+            const additionalTabs = document.querySelectorAll('.tabs_right .tab');
+            const additionalMaps = document.querySelectorAll('.height, .plain');
+            const additionalNavigator = document.querySelector('.tabs_right');
+
+            let activeAdditionalTab = document.querySelector('.tab.active');
+            additionalTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const mapId = tab.dataset.map;
+                    additionalMaps.forEach(map => {
+                        if (map.id === mapId) {
+                            map.style.display = 'block';
+                        } else {
+                            map.style.display = 'none';
+                        }
+                    });
+
+                    additionalNavigator.style.display = 'flex';
+                    additionalTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    activeAdditionalTab = tab;
+                    mainMaps.forEach(map => {
+                        const mainMapId = activeMainTab.dataset.map;
+                        if (map.id === mainMapId) {
+                            map.style.display = 'block';
+                        }
+                    }); 
+                });
+            });
+        });
+        
+        MapboxDraw.constants.classes.CONTROL_BASE  = 'maplibregl-ctrl';
+        MapboxDraw.constants.classes.CONTROL_PREFIX = 'maplibregl-ctrl-';
+        MapboxDraw.constants.classes.CONTROL_GROUP = 'maplibregl-ctrl-group';
+
+        const terrainExaggeration = 10; // Good with 0.005 interval // 0 to inf
+        const hillshadeExaggeration = 1; // Good with 0.005 interval //0 to 1
+        const terrainTiles = ["../../data-NOBACKUP/mockup-1_test/20240522_101941_stitched_height_terrain/{z}/{y}/{x}.png"]; 
+        const terrainTiles_viridis = ["../../data-NOBACKUP/mockup-1_test/20240522_101941_stitched_height_terrain/{z}/{y}/{x}.png"]; 
+        const RGBTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_rgb/20240515_103850_stitched_rgb/{z}/{y}/{x}.png"];
+        const heightTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_height_greenscale/{z}/{y}/{x}.png"];
+        const blackTiles = ["../../data-NOBACKUP/mockup-1_test/20240522_black/{z}/{y}/{x}.png"];
+        
+        const terrainTileSize = 256;
+
+        const terrainEncoding = "custom";
+        const interval = 1;
+        const baseShift = 0.0; 
+        const redFactor = 256*256*interval;
+        const greenFactor = 256*interval;
+        const blueFactor = 1.0*interval;
+
+        const webgl = new maplibregl.Map({
+            container: 'webgl',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: RGBTiles,
+                        tileSize: 256,
+                    },
+                    // Use a different source for terrain and hillshade layers, to improve render quality
+                    terrainSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    hillshadeSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm',
+                    },
+                    {
+                        id: 'hills',
+                        type: 'hillshade',
+                        source: 'hillshadeSource',
+                        layout: {visibility: 'visible'},
+                        paint: { // https://maplibre.org/maplibre-style-spec/layers/#hillshade
+                            'hillshade-illumination-anchor': "map", // default "viewport"
+                            'hillshade-illumination-direction': 300, // default 335
+                            'hillshade-highlight-color': '#ffffff', // default "#FFFFFF"
+                            'hillshade-accent-color': '#000000', // default "#000000"
+                            'hillshade-shadow-color': '#000000', // default "#000000"
+                            'hillshade-exaggeration': hillshadeExaggeration // default 0.5
+                        }
+                    }
+                ],
+                terrain: {
+                    source: 'terrainSource',
+                    exaggeration: terrainExaggeration,
+                }
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+            center: [-40, 40]
+        });
+
+        const viridisShaderFunction =  `
+        vec4 colormap(float t) {
+            const vec3 c0 = vec3(0.2777273272234177, 0.005407344544966578, 0.3340998053353061);
+            const vec3 c1 = vec3(0.1050930431085774, 1.404613529898575, 1.384590162594685);
+            const vec3 c2 = vec3(-0.3308618287255563, 0.214847559468213, 0.09509516302823659);
+            const vec3 c3 = vec3(-4.634230498983486, -5.799100973351585, -19.33244095627987);
+            const vec3 c4 = vec3(6.228269936347081, 14.17993336680509, 56.69055260068105);
+            const vec3 c5 = vec3(4.776384997670288, -13.74514537774601, -65.35303263337234);
+            const vec3 c6 = vec3(-5.435455855934631, 4.645852612178535, 26.3124352495832);
+
+            return vec4(c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6))))), 1.0);
+        }
+        `;
+
+        webgl.addControl(new maplibregl.FullscreenControl());
+        webgl.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+        webgl.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration,
+            })
+        );
+
+        //webgl.setMaxBounds(webgl.getBounds()) 
+        webgl.addControl(new HillshadeNAngle(webgl), 'top-right');
+
+        var drawFeatureID = '';
+        var newDrawFeature = false;
+
+        var draw = new MapboxDraw({
+            userProperties: true,
+            controls: {
+                'combine_features': false,
+                'uncombine_features': false,
+            },
+            styles: drawStylesLong
+        })
+
+        webgl.addControl(draw, 'top-right');
+        function changeColor(color) {
+            if (drawFeatureID !== '' && typeof draw === 'object') {
+                draw.setFeatureProperty(drawFeatureID, 'portColor', color);
+                var feat = draw.get(drawFeatureID);
+                draw.add(feat)
+            }
+        }
+
+        var setDrawFeature = function(e) {
+            if (e.features.length && e.features[0].type === 'Feature') {
+                var feat = e.features[0];
+                drawFeatureID = feat.id;
+            }
+        }
+
+        webgl.on('draw.create', function() {
+            newDrawFeature = true;
+        });
+        webgl.on('draw.update', setDrawFeature);
+        webgl.on('draw.selectionchange', setDrawFeature);
+        webgl.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+            }
+            newDrawFeature = false;
+        });
+
+        webgl.on("style.load", function () {
+        webgl.addControl(new maplibregl.Minimap({
+            tiles: RGBTiles,
+            width: "250px",
+            height: "250px",
+            id: 'minimap-control'
+        }), 'top-left');
+        });
+
+        webgl.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+
+                //if another drawFeature is not found - reset drawFeatureID
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+
+                // Select the corresponding log entry
+                selectLogEntry(drawFeatureID);
+            }
+
+            newDrawFeature = false;
+        });
+
+        const elevationEncoding = "custom"; 
+        const elevationInterval = 1.0;  // Almond Blossom 0.13
+        const elevationBaseShift = 0.0;  //  Almond Blossom 2000.0
+        const elevationRedFactor = 256*256*elevationInterval;
+        const elevationGreenFactor = 256*elevationInterval;
+        const elevationBlueFactor = 1.0*elevationInterval;
+        const height = (new maplibregl.Map({
+            validateStyle: false,
+            container: 'height',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    rgb: {
+                        type: 'raster',
+                        tiles: heightTiles,
+                        tileSize: 256,
+                    },
+                    // Use a different source for terrain and hillshade layers, to improve render quality
+                    terrainSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: 256,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    elevationSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles_viridis,
+                        tileSize: 256,
+                        encoding: elevationEncoding,
+                        redFactor: elevationRedFactor,
+                        greenFactor: elevationGreenFactor,
+                        blueFactor: elevationBlueFactor,
+                        baseShift: elevationBaseShift,
+                    },
+                    hillshadeSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: 256,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                },
+                layers: [
+                    {
+                        id: 'elevs',
+                        type: 'elevation',
+                        source: 'elevationSource',
+                        paint: {
+                            'elevation-colormap-breakpoint-low': 10000,  // 14000 appx data min
+                            'elevation-colormap-breakpoint-high': 27000,  // 45000 appx data max
+                            'elevation-colormap-function': viridisShaderFunction,
+                            'elevation-colormap-lowcutoff': 1,
+                            'elevation-colormap-lowcutoff-color': '#000000',
+                        },
+                    },
+                    {
+                        id: 'rgb',
+                        type: 'raster',
+                        source: 'rgb',
+                        layout: {visibility: 'none'},
+                        paint: {
+                            'raster-opacity': 0.5,
+                            'raster-resampling': 'nearest',
+                        }
+                    },
+                    {
+                        id: 'hills',
+                        type: 'hillshade',
+                        source: 'hillshadeSource',
+                        paint: {
+                            'hillshade-exaggeration': 0.3,
+                            'hillshade-illumination-anchor': 'map',
+                            'hillshade-shadow-color': '#473B24',
+                        }
+                    },
+                ],
+                terrain: {
+                    source: 'terrainSource',
+                    exaggeration: terrainExaggeration
+                }
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+        }));
+
+        let sliderOne = document.getElementById("slider-1");
+        let sliderTwo = document.getElementById("slider-2");
+        let displayValOne = document.getElementById("breakpoint-low-value");
+        let displayValTwo = document.getElementById("breakpoint-high-value");
+        let minGap = 0;
+        let sliderTrack = document.querySelector(".slider-track");
+        let sliderMaxValue = document.getElementById("slider-1").max;
+
+        function slideOne() {
+            if (parseInt(sliderTwo.value) - parseInt(sliderOne.value) <= minGap) {
+                sliderOne.value = parseInt(sliderTwo.value) - minGap;
+            }
+            displayValOne.textContent = sliderOne.value;
+            fillColor();
+            updateMapBreakpoints();
+        }
+
+        function slideTwo() {
+            if (parseInt(sliderTwo.value) - parseInt(sliderOne.value) <= minGap) {
+                sliderTwo.value = parseInt(sliderOne.value) + minGap;
+            }
+            displayValTwo.textContent = sliderTwo.value;
+            fillColor();
+            updateMapBreakpoints();
+        }
+
+        function fillColor() {
+            let percent1 = (sliderOne.value / sliderMaxValue) * 100;
+            let percent2 = (sliderTwo.value / sliderMaxValue) * 100;
+            sliderTrack.style.background = `linear-gradient(to right, #dadae5 ${percent1}% , #000000 ${percent1}% , #000000 ${percent2}%, #dadae5 ${percent2}%)`;
+        }
+
+        function updateMapBreakpoints() {
+            const low = parseFloat(sliderOne.value);
+            const high = parseFloat(sliderTwo.value);
+
+            height.setPaintProperty('elevs', 'elevation-colormap-breakpoint-low', low);
+            height.setPaintProperty('elevs', 'elevation-colormap-breakpoint-high', high);
+        }
+
+        fillColor();
+
+        height.addControl(new maplibregl.FullscreenControl());
+        height.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+        //height.setMaxBounds(webgl.getBounds())
+
+        var draw2 = new MapboxDraw({
+            displayControlsDefault: false,
+            controls: {
+                point: true,
+                line_string: true,
+                polygon: true,
+                trash: true
+            },
+            styles: drawStylesLong 
+        });
+
+        height.addControl(draw2);
+
+        const plain = new maplibregl.Map({
+            container: 'plain',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: blackTiles,
+                        tileSize: 256,
+                    },
+                    terrainSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    hillshadeSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm'
+                    },
+                    {
+                        id: 'hills',
+                        type: 'hillshade',
+                        source: 'hillshadeSource',
+                        layout: {visibility: 'visible'},
+                        paint: { 
+                            'hillshade-illumination-anchor': "map", 
+                            'hillshade-illumination-direction': 300, 
+                            'hillshade-highlight-color': '#ffffff', 
+                            'hillshade-accent-color': '#000000',
+                            'hillshade-shadow-color': '#000000', 
+                            'hillshade-exaggeration': hillshadeExaggeration
+                        }
+                    }
+                ],
+                terrain: {
+                    source: 'terrainSource',
+                    exaggeration: terrainExaggeration,
+                }
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+        });
+
+        plain.addControl(new maplibregl.FullscreenControl());
+        plain.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+        plain.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration,
+            })
+        );
+        plain.addControl(new LightAngleToggleControl(plain), 'top-right');
+
+        var draw3 = new MapboxDraw({
+            displayControlsDefault: false,
+            controls: {
+                point: true,
+                line_string: true,
+                polygon: true,
+                trash: true
+            },
+            styles: drawStylesLong
+        });
+
+        plain.addControl(draw3);
+        //plain.setMaxBounds(webgl.getBounds())        
+        
+        syncMaps(webgl, height);
+        syncMaps(webgl, plain);
+        var el = document.createElement('div');
+        el.className = 'pointer';
+        var marker = new mapboxgl.Marker(el, {anchor:'center'});
+
+        webgl.on("mousemove", function (e) {
+            marker.setLngLat(e.lngLat).addTo(height);
+        });
+        height.on("mousemove", function (e) {
+            marker.setLngLat(e.lngLat).addTo(webgl);
+        });
+        plain.on("mousemove", function (e) {
+            marker.setLngLat(e.lngLat).addTo(webgl);
+        });
+
+        var el2 = document.createElement('div');
+        el2.className = 'pointer';
+        var marker2 = new mapboxgl.Marker(el2, {anchor:'center'});
+        webgl.on("mousemove", function (e) {
+            marker2.setLngLat(e.lngLat).addTo(plain);
+        });
+
+        webgl.on('draw.create', syncFromMap1ToMap2);
+        webgl.on('draw.update', syncFromMap1ToMap2);
+        webgl.on('draw.delete', syncFromMap1ToMap2);
+
+        height.on('draw.create', syncFromMap2ToMap1);
+        height.on('draw.update', syncFromMap2ToMap1);
+        height.on('draw.delete', syncFromMap2ToMap1);
+
+        webgl.on('draw.create', syncFromMap1ToMap3);
+        webgl.on('draw.update', syncFromMap1ToMap3);
+        webgl.on('draw.delete', syncFromMap1ToMap3);
+
+        height.on('draw.create', syncFromMap2ToMap3);
+        height.on('draw.update', syncFromMap2ToMap3);
+        height.on('draw.delete', syncFromMap2ToMap3);
+
+        plain.on('draw.create', syncFromMap3ToMap2);
+        plain.on('draw.update', syncFromMap3ToMap2);
+        plain.on('draw.delete', syncFromMap3ToMap2);
+
+        plain.on('draw.create', syncFromMap3ToMap1);
+        plain.on('draw.update', syncFromMap3ToMap1);
+        plain.on('draw.delete', syncFromMap3ToMap1);
+
+        addXYDisplay(webgl);
+        addXYDisplay(height);
+        addXYDisplay(plain); 
+
+        set_logAnnotation(webgl);
+        set_logAnnotation(height);
+        set_logAnnotation(plain);
+
+        // Add toggle button functionality
+        var annotationsVisible = true;
+        document.getElementById('toggle-btn').onclick = function() {
+            annotationsVisible = !annotationsVisible;
+            var visibility = annotationsVisible ? 'visible' : 'none';
+            webgl.getStyle().layers.forEach(function(layer) {
+                if (layer.id.includes('gl-draw')) {
+                    webgl.setLayoutProperty(layer.id, 'visibility', visibility);
+                    height.setLayoutProperty(layer.id, 'visibility', visibility);
+                    plain.setLayoutProperty(layer.id, 'visibility', visibility);
+                }
+            });
+        };
+
+        webgl.on('load', function() {
+            webgl.addSource("aerial-source1", {
+                "type": "image",
+                "url": "img/transparent1.png",
+                "coordinates": [
+                [-73, 57.25],
+                [-62, 57.25],
+                [-62, 53],
+                [-73, 53]
+                ]
+            });
+            
+            webgl.addLayer({
+                "id": "overlay1",
+                "source": "aerial-source1",
+                "type": "raster",
+                "paint": {
+                "raster-opacity": 0.5
+                }
+            });
+        });
+        
+        webgl.on('load', function() {
+            webgl.addSource("aerial-source2", {
+                "type": "image",
+                "url": "img/transparent2.png",
+                "coordinates": [
+                [-79, 53.25],
+                [-77, 53.25],
+                [-77, 51],
+                [-79, 51]
+                ]
+            });
+            
+            webgl.addLayer({
+                "id": "overlay2",
+                "source": "aerial-source2",
+                "type": "raster",
+                "paint": {
+                "raster-opacity": 0.5
+                }
+            });
+        });
+
+        webgl.on('load', function() {
+            webgl.addSource("aerial-source3", {
+                "type": "image",
+                "url": "img/transparent3.png",
+                "coordinates": [
+                [-88.25, -30.25],
+                [-84, -30.25],
+                [-84, -34],
+                [-88.25, -34]
+                ]
+            });;
+            
+            webgl.addLayer({
+                "id": "overlay3",
+                "source": "aerial-source3",
+                "type": "raster",
+                "paint": {
+                "raster-opacity": 0.5
+                }
+            });
+        });
+
+        let layersVisible = true;
+        function toggleLayers() {
+                layersVisible = !layersVisible;
+                webgl.setLayoutProperty('overlay', 'visibility', layersVisible ? 'visible' : 'none');
+                height.setLayoutProperty('overlay', 'visibility', layersVisible ? 'visible' : 'none');
+                plain.setLayoutProperty('overlay', 'visibility', layersVisible ? 'visible' : 'none');
+            }
+
+        let measurementActive = false;
+        let points = [];
+        let line = null;
+        function toggleMeasurement() {
+            measurementActive = !measurementActive;
+            if (!measurementActive) {
+                clearMeasurement();
+            }
+        }
+
+        function clearMeasurement() {
+            if (line) {
+                webgl.removeLayer('measure-line');
+                webgl.removeSource('measure-line');
+            }
+            points = [];
+            line = null;
+            document.getElementById('distance').innerText = 'Distance: 0 meters';
+        }
+
+        webgl.on('click', function(e) {
+            if (measurementActive) {
+                points.push(e.lngLat);
+                if (points.length === 2) {
+                drawLine();
+                const distance = points[0].distanceTo(points[1]);
+
+                const point_0_mercator = mapboxgl.MercatorCoordinate.fromLngLat(points[0]);
+                const point_1_mercator = mapboxgl.MercatorCoordinate.fromLngLat(points[1]);
+                const dist_x_mercator = point_0_mercator.x - point_1_mercator.x
+                const dist_y_mercator = point_0_mercator.y - point_1_mercator.y
+                const dist_mercator = Math.sqrt(dist_x_mercator*dist_x_mercator + dist_y_mercator*dist_y_mercator)
+
+                const dist_true = dist_mercator * captured_area_size
+                document.getElementById('calculated-length').innerHTML = `Distance: ${dist_true.toFixed(2)}mm`;
+                points = [];
+                }
+            }
+        });
+
+        function drawLine() {
+            if (line) {
+                webgl.removeLayer('measure-line');
+                webgl.removeSource('measure-line');
+            }
+            line = {
+                'type': 'Feature',
+                'geometry': {
+                'type': 'LineString',
+                'coordinates': points.map(p => [p.lng, p.lat])
+                }
+            };
+
+            webgl.addSource('measure-line', {
+                'type': 'geojson',
+                'data': line
+            });
+
+            webgl.addLayer({
+                'id': 'measure-line',
+                'type': 'line',
+                'source': 'measure-line',
+                'layout': {},
+                'paint': {
+                'line-color': 'magenta',
+                'line-width': 2,
+                'line-dasharray': [2, 2]
+                }
+            });
+        }
+
+        const centeringLngLat = webgl.getCenter();
+        const centerPoint = webgl.project(centeringLngLat);
+        const targetPoint = [centerPoint.x + 100, centerPoint.y];
+        const targetLngLat = webgl.unproject(targetPoint);
+
+        const centering_mercator = mapboxgl.MercatorCoordinate.fromLngLat(centeringLngLat);
+        const target_mercator = mapboxgl.MercatorCoordinate.fromLngLat(targetLngLat);
+
+        const dist_mercator = target_mercator.x - centering_mercator.x
+        const dist_true_100px = dist_mercator * captured_area_size
+
+        function updateScaleValue() {
+            const scaleValue = document.getElementById('scale-value');
+            const zoom = webgl.getZoom();
+
+            // Calculate the real-world distance for 100 pixels
+            const dist_true_100px = (dist_mercator * captured_area_size / (Math.pow(2, zoom)/(Math.PI))).toFixed(2);
+            scaleValue.textContent = dist_true_100px; // *10 for cm to mm, realWorldMm for 100px
+        }
+
+        height.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+
+                //if another drawFeature is not found - reset drawFeatureID
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+
+                // Select the corresponding log entry
+                selectLogEntry(drawFeatureID);
+            }
+
+            newDrawFeature = false;
+        });
+
+        plain.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+
+                //if another drawFeature is not found - reset drawFeatureID
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+
+                // Select the corresponding log entry
+                selectLogEntry(drawFeatureID);
+            }
+
+            newDrawFeature = false;
+        });
+
+        drawChart();
+
+        webgl.on("load", function () {
+            webgl.addSource("geojson1", {
+                type: "geojson",
+                data: geojson1
+            });
+
+            webgl.addSource("geojson2", {
+                type: "geojson",
+                data: geojson2
+            });
+
+            webgl.addLayer({
+                id: "measure-points1",
+                type: "circle",
+                source: "geojson1",
+                paint: {
+                    "circle-radius": 5,
+                    "circle-color": "#FF00FF" // Magenta color
+                },
+                filter: ["in", "$type", "Point"]
+            });
+            webgl.addLayer({
+                id: "measure-lines1",
+                type: "line",
+                source: "geojson1",
+                layout: {
+                    "line-cap": "round",
+                    "line-join": "round"
+                },
+                paint: {
+                    "line-color": "#FF00FF", // Magenta color
+                    "line-width": 2.5
+                },
+                filter: ["in", "$type", "LineString"]
+            });
+
+            webgl.addLayer({
+                id: "measure-points2",
+                type: "circle",
+                source: "geojson2",
+                paint: {
+                    "circle-radius": 5,
+                    "circle-color": "#00FF00" // Green color
+                },
+                filter: ["in", "$type", "Point"]
+            });
+            webgl.addLayer({
+                id: "measure-lines2",
+                type: "line",
+                source: "geojson2",
+                layout: {
+                    "line-cap": "round",
+                    "line-join": "round"
+                },
+                paint: {
+                    "line-color": "#00FF00", // Green color
+                    "line-width": 2.5
+                },
+                filter: ["in", "$type", "LineString"]
+            });
+
+            webgl.on("click", function (e) {
+                if (isDrawing1 || isDrawing2) {
+                    let geojson = isDrawing1 ? geojson1 : geojson2;
+                    let linestring = isDrawing1 ? linestring1 : linestring2;
+                    let chartData = isDrawing1 ? chartData1 : chartData2;
+                    let chartLabels = isDrawing1 ? chartLabels1 : chartLabels2;
+                    let source = isDrawing1 ? "geojson1" : "geojson2";
+
+                    var features = webgl.queryRenderedFeatures(e.point, {
+                        layers: ["measure-points1", "measure-points2"]
+                    });
+
+                    if (geojson.features.length > 1) geojson.features.pop();
+
+                    if (features.length) {
+                        var id = features[0].properties.id;
+                        geojson.features = geojson.features.filter(function (point) {
+                            return point.properties.id !== id;
+                        });
+                    } else {
+                        var point = {
+                            type: "Feature",
+                            geometry: {
+                                type: "Point",
+                                coordinates: [e.lngLat.lng, e.lngLat.lat]
+                            },
+                            properties: {
+                                id: String(new Date().getTime())
+                            }
+                        };
+                        geojson.features.push(point);
+                    }
+
+                    if (geojson.features.length > 1) {
+                        linestring.geometry.coordinates = geojson.features.map(function (point) {
+                            return point.geometry.coordinates;
+                        });
+
+                        geojson.features.push(linestring);
+
+                        let lineLength = turf.length(linestring, { units: 'meters' });
+                        let divisionLength = lineLength / 20;
+
+                        let newLine = turf.lineChunk(linestring, divisionLength, { units: 'meters' });
+                        chartData = newLine.features.map(el => webgl.queryTerrainElevation(el.geometry.coordinates[0]));
+                        chartLabels = newLine.features.map((el, index) => (index * divisionLength).toFixed(2));
+
+                        if (isDrawing1) {
+                            chartData1 = chartData;
+                            chartLabels1 = chartLabels;
+                        } else {
+                            chartData2 = chartData;
+                            chartLabels2 = chartLabels;
+                        }
+
+                        drawChart();
+                    }
+
+                    webgl.getSource(source).setData(geojson);
+                }
+            });
+        });
+
+         // Add initial annotation in the center of the map
+         webgl.on('load', function () {
+            var initialFeature = {
+                'id': 'initial-point1',
+                'type': 'Feature',
+                'properties': {
+                    'title': 'Auto detected 1',
+                    'username': 'crack detection V1.0',
+                    'creationDate': new Date().toISOString().split('T')[0]
+                },
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [-66.5, 55.125]
+                },
+            };
+            initialFeature.properties['fill-opacity'] = 0;
+            draw.add(initialFeature);
+            logAnnotation('Initial', initialFeature);
+
+            var initialFeature2 = {
+                'id': 'initial-point2',
+                'type': 'Feature',
+                'properties': {
+                    'title': 'Auto detected 2',
+                    'username': 'crack detection V1.0',
+                    'creationDate': new Date().toISOString().split('T')[0]
+                },
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [-78.5, 52.125]
+                },
+            };
+            initialFeature2.properties['fill-opacity'] = 0;
+            draw.add(initialFeature2);
+            logAnnotation('Initial', initialFeature2);
+
+            var initialFeature3 = {
+                'id': 'initial-point3',
+                'type': 'Feature',
+                'properties': {
+                    'title': 'Auto detected 3',
+                    'username': 'crack detection V1.0',
+                    'creationDate': new Date().toISOString().split('T')[0]
+                },
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [-87, -31.875]
+                },
+            };
+            initialFeature3.properties['fill-opacity'] = 0;
+            draw.add(initialFeature3);
+            logAnnotation('Initial', initialFeature3);
+        });
+
+    </script>
+</body>
+</html>

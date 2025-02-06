@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Leaflet Height Terrain-RGB Raw Tile View</title>
+    <link rel="stylesheet" href="./pkg/leaflet@1.7.1/leaflet.css" crossorigin=""/>
+    <script src="./pkg/leaflet@1.7.1/leaflet.js" crossorigin=""></script>
+    
+    <link rel="stylesheet" href="./css/leaflet-crisp.css" crossorigin=""/>
+
+    <style type="text/css">
+        html, body { 
+          width: 100%; 
+          height: 100%; 
+          padding: 0;
+          margin: 0;
+        }
+
+        /* Left-right */
+        #map1 { 
+          width: 100%; 
+          height: 100%; 
+          background-color: black;}
+
+    </style>
+
+</head>
+
+<body>
+    
+    <div id="map1"></div>
+
+    <script type="text/javascript">
+        const urlA = "../data-NOBACKUP/mockup-1/20231215_180420_stitched_height_terrain_inv0-05_z-1u/{z}/{y}/{x}.png";
+        const attributionA = 'Color';
+
+        const fitBounds = false;
+        const tileSize = 256;
+
+        const center = [-80, 90];
+        const crs = L.CRS.Simple;
+        const zoom = 0;
+        const maxZoom = 20;
+        const detectRetina = true;
+        const zoomSnap = 1;
+
+        const attributionPrefix = 'Keyence';
+        
+        const optionsMap = {
+          center: center,
+          crs: crs,
+          zoom: zoom,
+          maxZoom: maxZoom,
+          zoomControl: false,
+          zoomSnap: zoomSnap,
+        }
+
+        const map1 = L.map('map1', optionsMap);
+        map1.attributionControl.setPrefix(attributionPrefix)
+
+        const rgbLayer = L.tileLayer(urlA, {
+            attribution: attributionA,
+            fitBounds: fitBounds,
+            tileSize: tileSize,
+            detectRetina: detectRetina,
+            maxZoom: 20,
+            maxNativeZoom: 6,
+        }).addTo(map1);
+
+        // Visual debug layer
+
+        L.GridLayer.DebugCoords = L.GridLayer.extend({
+            createTile: function (coords) {
+                var tile = document.createElement('div');
+                tile.innerHTML = [coords.x, coords.y, coords.z].join(', ');
+                tile.style.outline = '1px solid red';
+                tile.style.color = 'white';
+                return tile;
+            }
+        });
+
+        L.gridLayer.debugCoords = function(opts) {
+            return new L.GridLayer.DebugCoords(opts);
+        };
+
+        map1.addLayer( L.gridLayer.debugCoords() );
+
+    </script>
+    
+</body>
+</html>

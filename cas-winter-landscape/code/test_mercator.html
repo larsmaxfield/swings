@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test mercator</title>
+
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.13.0/mapbox-gl.js'></script>
+    <link href='.pkg/mapbox@1.13.0/mapbox-gl.css' rel='stylesheet' /> 
+    <link rel='stylesheet' href='./pkg/ASML-own/maplibre-gl/maplibre-gl.css' />
+    <script src='./pkg/ASML-own/maplibre-gl/maplibre-gl.js'></script>
+
+    <link rel="stylesheet" href="./pkg/leaflet@1.7.1/leaflet.css" crossorigin=""/>
+    <script src="./pkg/leaflet@1.7.1/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.css" crossorigin=""/>
+    <script src="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.min.js" crossorigin=""></script>
+    <script src='./pkg/maplibre-control-minimap/mapboxgl-control-minimap.js'></script>
+    <script src="./pkg/regenerator-runtime@0.14.0/runtime.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="./pkg/leaflet-minimap/Control.MiniMap.css"/>
+    <script src="./pkg/leaflet-minimap/Control.MiniMap.js"></script>
+    <script src="./pkg/maplibre-syncMaps/syncMaps.js"></script>
+    <script src="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.js"></script>
+    <link rel="stylesheet" href="./pkg/mapbox-gl-draw@1.4.3/mapbox-gl-draw.css" type="text/css"/>
+     
+    <script src="./pkg/ASML-own/setupMap.js"></script>
+    <script src="./pkg/ASML-own/drawStylesLong.js"></script>
+    <script src="./pkg/ASML-own/drawStylesShort.js"></script>
+    <script src="./pkg/ASML-own/ExaggerationControl.js"></script>
+    <script src="./pkg/ASML-own/LightAngleToggleControl.js"></script>
+    <script src="./pkg/ASML-own/HillshadeNAngle.js"></script>
+    <script src="./pkg/ASML-own/annotations.js"></script>
+    <link rel="stylesheet" href="./pkg/ASML-own/style.css"/>
+    
+</head>
+<body>
+    <div id="maps" class="maps">
+        <div id="webgl" class="webgl"></div>
+    </div>
+    <div id="xyDisplay" style="position: absolute; bottom: 10px; left: 10px; color: white;"></div>
+    <div id="calculated-length" style="position: absolute; bottom: 10px; left: 185px; color: white;"> Distance: </div>
+    <button class="measure-button" onclick="toggleMeasurement()">Toggle Measurement Tool</button>
+    <script>
+       
+        MapboxDraw.constants.classes.CONTROL_BASE  = 'maplibregl-ctrl';
+        MapboxDraw.constants.classes.CONTROL_PREFIX = 'maplibregl-ctrl-';
+        MapboxDraw.constants.classes.CONTROL_GROUP = 'maplibregl-ctrl-group';
+        const RGBTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_rgb/20240515_103850_stitched_rgb/{z}/{y}/{x}.png"];
+        const terrainTileSize = 256;
+        const webgl = new maplibregl.Map({
+            container: 'webgl',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: RGBTiles,
+                        tileSize: 256,
+                    },
+                    
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm',
+                    }
+                ],
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+            center: [-40, 40]
+        });
+
+        webgl.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+
+        var drawFeatureID = '';
+        var newDrawFeature = false;
+
+        var draw = new MapboxDraw({
+            userProperties: true,
+            controls: {
+                'combine_features': false,
+                'uncombine_features': false,
+            },
+            styles: drawStylesLong
+        })
+
+        webgl.addControl(draw, 'top-right');
+        function changeColor(color) {
+            if (drawFeatureID !== '' && typeof draw === 'object') {
+                draw.setFeatureProperty(drawFeatureID, 'portColor', color);
+                var feat = draw.get(drawFeatureID);
+                draw.add(feat)
+            }
+        }
+
+        var setDrawFeature = function(e) {
+            if (e.features.length && e.features[0].type === 'Feature') {
+                var feat = e.features[0];
+                drawFeatureID = feat.id;
+            }
+        }
+
+        webgl.on('draw.create', function() {
+            newDrawFeature = true;
+        });
+        webgl.on('draw.update', setDrawFeature);
+        webgl.on('draw.selectionchange', setDrawFeature);
+        webgl.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+            }
+            newDrawFeature = false;
+        });
+
+        webgl.on('click', function(e) {
+            if (!newDrawFeature) {
+                var drawFeatureAtPoint = draw.getFeatureIdsAt(e.point);
+
+                //if another drawFeature is not found - reset drawFeatureID
+                drawFeatureID = drawFeatureAtPoint.length ? drawFeatureAtPoint[0] : '';
+
+                // Select the corresponding log entry
+                selectLogEntry(drawFeatureID);
+            }
+
+            newDrawFeature = false;
+        });
+
+        const max_zoomlvl = 7;
+        const pixels_per_zoomlvl = 256;
+        const max_pixels = pixels_per_zoomlvl*(2**max_zoomlvl)
+        const capture_size = 24; //24mm per individiual capture
+        const pixels_per_capture = 3072; 
+        const captured_area_size = max_pixels * (capture_size/pixels_per_capture) //size of painting in mm (for mockup 1: 256 mm = 25.6 cm)
+        console.log(max_pixels)
+        console.log(captured_area_size)
+
+        function addXYDisplay(map) {
+            map.on('click', function (e) {
+                const lngLat = e.lngLat;
+                const mercatorCoord = mapboxgl.MercatorCoordinate.fromLngLat(lngLat);
+                const true_size_x = mercatorCoord.x * captured_area_size
+                const true_size_y = mercatorCoord.y * captured_area_size
+                
+                document.getElementById('xyDisplay').innerHTML = `X: ${true_size_x.toFixed(2)}mm, Y: ${true_size_y.toFixed(2)}mm`;
+            });
+        }
+
+        addXYDisplay(webgl);
+
+        let measurementActive = false;
+        let points = [];
+        let line = null;
+        function toggleMeasurement() {
+            measurementActive = !measurementActive;
+            if (!measurementActive) {
+                clearMeasurement();
+            }
+        }
+
+        function clearMeasurement() {
+            if (line) {
+                webgl.removeLayer('measure-line');
+                webgl.removeSource('measure-line');
+            }
+            points = [];
+            line = null;
+            document.getElementById('distance').innerText = 'Distance: 0 meters';
+        }
+
+        webgl.on('click', function(e) {
+            if (measurementActive) {
+                points.push(e.lngLat);
+                if (points.length === 2) {
+                drawLine();
+                const distance = points[0].distanceTo(points[1]);
+
+                const point_0_mercator = mapboxgl.MercatorCoordinate.fromLngLat(points[0]);
+                const point_1_mercator = mapboxgl.MercatorCoordinate.fromLngLat(points[1]);
+                const dist_x_mercator = point_0_mercator.x - point_1_mercator.x
+                const dist_y_mercator = point_0_mercator.y - point_1_mercator.y
+                const dist_mercator = Math.sqrt(dist_x_mercator*dist_x_mercator + dist_y_mercator*dist_y_mercator)
+
+                const dist_true = dist_mercator * captured_area_size
+                document.getElementById('calculated-length').innerHTML = `Distance: ${dist_true.toFixed(2)}mm`;
+                points = [];
+                }
+            }
+        });
+
+        function drawLine() {
+            if (line) {
+                webgl.removeLayer('measure-line');
+                webgl.removeSource('measure-line');
+            }
+            line = {
+                'type': 'Feature',
+                'geometry': {
+                'type': 'LineString',
+                'coordinates': points.map(p => [p.lng, p.lat])
+                }
+            };
+
+            webgl.addSource('measure-line', {
+                'type': 'geojson',
+                'data': line
+            });
+
+            webgl.addLayer({
+                'id': 'measure-line',
+                'type': 'line',
+                'source': 'measure-line',
+                'layout': {},
+                'paint': {
+                'line-color': 'magenta',
+                'line-width': 2,
+                'line-dasharray': [2, 2]
+                }
+            });
+        }
+
+        const scale = new maplibregl.ScaleControl({
+            maxWidth: 100,
+            unit: 'metric'
+        });
+        webgl.addControl(scale, 'top-left')
+      
+    </script>
+</body>
+</html>

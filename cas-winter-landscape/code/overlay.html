@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display a raster image</title>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css" rel="stylesheet" />
+  <script src='./pkg/ASML-own/maplibre-gl/maplibre-gl.js'></script>
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    .toggle-button {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1;
+      background: white;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <button class="toggle-button" onclick="toggleLayers()">Toggle Aerial Layers</button>
+  <script>
+    const RGBTiles = ["../../data-NOBACKUP/mockup-1_test/20240515_103850_stitched_rgb/20240515_103850_stitched_rgb/{z}/{y}/{x}.png"];
+
+    mapboxgl.accessToken = "pk.eyJ1Ijoic2VsZW5lY29kZXMiLCJhIjoiY2t2aDdteThhM3RwdTJxb2syZjZqbjd0dCJ9.BtnrFEPsWw_qShFqR8DY3w";
+    
+    const map = new maplibregl.Map({
+            container: 'map',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: RGBTiles,
+                        tileSize: 256,
+                    },
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm',
+                    },
+                ],
+            },
+            maxZoom: 18,
+            maxPitch: 85,
+            center: [-40, 40]
+        });
+
+    let layersVisible = true;
+
+    map.on('load', function() {
+      map.addSource("aerial-source", {
+        "type": "image",
+        "url": "img/transparent_output.png",
+        "coordinates": [
+          [-72, 57.25],
+          [-61, 57.25],
+          [-61, 53],
+          [-72, 53]
+        ]
+      });;
+      
+      map.addLayer({
+        "id": "overlay",
+        "source": "aerial-source",
+        "type": "raster",
+        "paint": {
+          "raster-opacity": 0.4
+        }
+      });
+    });
+
+    function toggleLayers() {
+      layersVisible = !layersVisible;
+      map.setLayoutProperty('overlay', 'visibility', layersVisible ? 'visible' : 'none');
+      //map.setLayoutProperty('overlay2', 'visibility', layersVisible ? 'visible' : 'none');
+    }
+  </script>
+</body>
+</html>

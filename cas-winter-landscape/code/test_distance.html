@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display a raster image</title>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css" rel="stylesheet" />
+  <link rel='stylesheet' href='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.css' />
+  <script src='https://unpkg.com/maplibre-gl@4.3.2/dist/maplibre-gl.js'></script>
+  <style>
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    .measure-button {
+      position: absolute;
+      top: 50px;
+      left: 10px;
+      z-index: 1;
+      background: white;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+    }
+    #distance {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      z-index: 1;
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <button class="measure-button" onclick="toggleMeasurement()">Toggle Measurement Tool</button>
+  <div id="distance">Distance: 0 meters</div>
+  <script>
+    mapboxgl.accessToken = "pk.eyJ1Ijoic2VsZW5lY29kZXMiLCJhIjoiY2t2aDdteThhM3RwdTJxb2syZjZqbjd0dCJ9.BtnrFEPsWw_qShFqR8DY3w";
+
+    const map = new mapboxgl.Map({
+      container: 'map', // container's id or the HTML element to render the map
+      style: 'mapbox://styles/mapbox/streets-v11', // map style
+      center: [4.64086758, 50.9001362], // starting position [lng, lat]
+      zoom: 17, // starting zoom
+    });
+
+    let layersVisible = true;
+    let measurementActive = false;
+    let points = [];
+    let line = null;
+
+    map.on('load', function() {
+      map.addSource("aerial-source", {
+        "type": "image",
+        "url": "img/experiment_output.png",
+        "coordinates": [
+          [4.639663696289062, 50.900867668253724],
+          [4.642066955566406, 50.900867668253724],
+          [4.642066955566406, 50.89935199434383],
+          [4.639663696289062, 50.89935199434383]
+        ]
+      });
+      
+      map.addLayer({
+        "id": "overlay",
+        "source": "aerial-source",
+        "type": "raster",
+        "paint": {
+          "raster-opacity": 1
+        }
+      });
+    });
+
+    function toggleLayers() {
+      layersVisible = !layersVisible;
+      map.setLayoutProperty('overlay', 'visibility', layersVisible ? 'visible' : 'none');
+    }
+
+    function toggleMeasurement() {
+      measurementActive = !measurementActive;
+      if (!measurementActive) {
+        clearMeasurement();
+      }
+    }
+
+    function clearMeasurement() {
+      if (line) {
+        map.removeLayer('measure-line');
+        map.removeSource('measure-line');
+      }
+      points = [];
+      line = null;
+      document.getElementById('distance').innerText = 'Distance: 0 meters';
+    }
+
+    map.on('click', function(e) {
+      if (measurementActive) {
+        points.push(e.lngLat);
+        if (points.length === 2) {
+          drawLine();
+          const distance = points[0].distanceTo(points[1]);
+          console.log(points[0])
+          console.log(points[1])
+          document.getElementById('distance').innerText = 'Distance: ' + distance.toFixed(2) + ' meters';
+          points = [];
+        }
+      }
+    });
+
+    function drawLine() {
+      if (line) {
+        map.removeLayer('measure-line');
+        map.removeSource('measure-line');
+      }
+      line = {
+        'type': 'Feature',
+        'geometry': {
+          'type': 'LineString',
+          'coordinates': points.map(p => [p.lng, p.lat])
+        }
+      };
+
+      map.addSource('measure-line', {
+        'type': 'geojson',
+        'data': line
+      });
+
+      map.addLayer({
+        'id': 'measure-line',
+        'type': 'line',
+        'source': 'measure-line',
+        'layout': {},
+        'paint': {
+          'line-color': 'magenta',
+          'line-width': 2,
+          'line-dasharray': [2, 2]
+        }
+      });
+    }
+
+    map.on('click', function(e) {
+      const lngLat = e.lngLat;
+      const mercatorCoord = mapboxgl.MercatorCoordinate.fromLngLat(lngLat);
+      //console.log('LatLng:', lngLat);
+      //console.log('Mercator Coordinate:', mercatorCoord);
+    });
+  </script>
+</body>
+</html>

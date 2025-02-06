@@ -1,0 +1,90 @@
+body {
+    overflow: hidden;
+}
+
+body * {
+    -webkit-touch-callout: none;
+      -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+              user-select: none;
+}
+
+hr { flex-basis: 100%; height: 0; margin: 0; border: 0; }
+
+:root {
+    --lens-radius: 400px;
+    --lens-border: 1px;
+    --lens-left: 30px;
+    --lens-top: 40px;
+    --mouse-page-x: 0px;
+    --mouse-page-y: 0px;
+}
+
+#lens-outside {
+    color: darkred;
+    grid-row: 1 / -1;
+    grid-column: 1 / -1;
+    position: relative;
+    display: flex;
+    flex-flow: wrap;
+    justify-content: space-between;
+    align-content: space-between;
+    overflow: hidden;
+    /* pointer-events: none; none when inside content driving \ */
+}
+
+#lens-container {
+    position: absolute;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: repeat(1, 2fr);
+    grid-template-columns: repeat(1, 2fr);
+    height: 100vh;
+    width: 100vw;
+    top: 0;
+    left: 0;
+    border: 1px black;
+}
+
+#lens-inside {
+    color: lightblue;
+    position: absolute;
+    display: flex;
+    flex-flow: wrap;
+    justify-content: space-between;
+    align-content: space-between;
+    margin-top: calc(-1*(var(--mouse-page-y) - var(--lens-radius)));
+    margin-left: calc(-1*(var(--mouse-page-x) - var(--lens-radius)));
+    overflow: hidden;
+    pointer-events: none; /* none when outside content driving \ */
+}   
+
+.lens {
+    margin: auto;
+    position: absolute;
+    top: var(--lens-top);
+    left: var(--lens-left);
+    width: calc(2*var(--lens-radius));
+    height: calc(2*var(--lens-radius));
+    border-radius: calc(infinity*1px);
+    overflow: hidden;
+    pointer-events: none; /* none when outside content driving \ */
+}
+
+.lens-shadow {
+    color: aquamarine;
+    margin: calc(-1*var(--lens-border));
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    top: var(--lens-top); left: var(--lens-left);
+    width: calc(2*var(--lens-radius));
+    height: calc(2*var(--lens-radius));
+    border-radius: calc(infinity*1px);
+    box-shadow: inset 10px 10px 19px -4px rgba(0,0,0,0.65);
+    border: var(--lens-border) solid #fffbe7;
+    pointer-events: none;
+    overflow: hidden;
+  }
