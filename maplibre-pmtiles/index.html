@@ -19,7 +19,8 @@
 <script>
 
     // Constants
-    const terrainExaggeration = 3.0;
+    const terrainExaggeration = 8.0;
+    const hillshadeExaggeration = 0.5;
     const terrainEncoding = "custom";
     const interval = 1.0;  // Amazon Terrarium 1.0
     const baseShift = 0.0;  // Amazon Terrarium 32768.0 (2^15)
@@ -33,24 +34,36 @@
 
     // const PMTILES_URL_RGB = './rgb-direct.pmtiles';
     // const PMTILES_URL_TERRAIN = './terrain-direct.pmtiles';
-    // const PMTILES_URL_RGB = './20241104_174121_stitched_rgb.pmtiles';
-    // const PMTILES_URL_TERRAIN = './20241104_174121_stitched_height.pmtiles';
-    // const PMTILES_URL_RGB = 'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_rgb.pmtiles';
-    // const PMTILES_URL_TERRAIN = 'https://storage.googleapis.com/larsmaxfield.com/paintings/almond-blossom/20241023_175809_stitched_height.pmtiles';
-    const PMTILES_URL_RGB = 'https://storage.googleapis.com/larsmaxfield.com/paintings/winter-landscape/20241104_174121_stitched_rgb.pmtiles';
-    const PMTILES_URL_TERRAIN = 'https://storage.googleapis.com/larsmaxfield.com/paintings/winter-landscape/20241104_174121_stitched_height.pmtiles';
+    // const PMTILES_URL_RGB = './rgb-gray.pmtiles';
+    // const PMTILES_URL_TERRAIN = './height-gray-inpaint.pmtiles';
+    // const PMTILES_URL_TERRAIN = './height-gray-no-inpaint.pmtiles';
+    // const PMTILES_URL_NAN = './nan-gray.pmtiles';
+
+    // const PMTILES_URL_RGB = './20241221_194100_stitched_rgb_thunder.pmtiles';
+    // const PMTILES_URL_TERRAIN = './20241221_194100_stitched_height_thunder.pmtiles';
+    // const PMTILES_URL_NAN = './20241221_194100_stitched_nan_thunder.pmtiles';
+    const PMTILES_URL_RGB = './20250207_134249_stitched_rgb.pmtiles';  // Almond, crack
+    const PMTILES_URL_TERRAIN = './20250207_134249_stitched_height.pmtiles';
+    const PMTILES_URL_NAN = './20250207_134249_stitched_nan.pmtiles';
+    // const PMTILES_URL_RGB = './20250207_184219_stitched_rgb.pmtiles';  // Winter landscape
+    // const PMTILES_URL_TERRAIN = './20250207_184219_stitched_height.pmtiles';
+    // const PMTILES_URL_NAN = './20250207_184219_stitched_nan.pmtiles';
 
     const pr = new pmtiles.PMTiles(PMTILES_URL_RGB);
     const pt = new pmtiles.PMTiles(PMTILES_URL_TERRAIN);
+    const pn = new pmtiles.PMTiles(PMTILES_URL_NAN);
 
     protocol.add(pr);
     protocol.add(pt);
+    protocol.add(pn);
 
     const hm = [
         pr.getHeader(),
         pr.getMetadata(),
         pt.getHeader(),
         pt.getMetadata(),
+        pn.getHeader(),
+        pn.getMetadata(),
     ];
 
     const map = Promise.all(hm).then((values) => {
@@ -60,8 +73,10 @@
         const r_m = values[1];
         const t_h = values[2];
         const t_m = values[3];
+        const n_h = values[4];
+        const n_m = values[5];
 
-        const overZoom = 2;
+        const overZoom = 1;
         const maxZoom = Math.max(r_h.maxZoom, t_h.maxZoom) + overZoom;
         const map = new maplibregl.Map({
             container: 'map',
@@ -72,6 +87,7 @@
             hash: true,
             maxZoom: maxZoom,  // Max zoom + overzoom
             maxPitch: 85,
+            aroundCenter: false,
             renderWorldCopies: false,
             allowUnderzoom: true,
             underzoom: 80,
@@ -83,6 +99,7 @@
                         type: 'raster',
                         url: `pmtiles://${PMTILES_URL_RGB}`,
                         attribution: r_m.attribution + ' · ' + t_m.attribution,
+                        tileSize: r_m.tileSize/2
                     },
                     'terrain_source': {
                         type: 'raster-dem',
@@ -102,6 +119,10 @@
                         blueFactor: blueFactor,
                         baseShift: baseShift,
                     },
+                    'nan_source': {
+                        type: 'raster',
+                        url: `pmtiles://${PMTILES_URL_NAN}`
+                    },
                 },
                 layers: [
                     {
@@ -109,7 +130,7 @@
                         'type': 'raster',
                         'source': 'rgb_source',
                         'paint': {
-                            'raster-resampling': 'linear'
+                            'raster-resampling': 'nearest'
                         }
                     },
                     {
@@ -117,8 +138,17 @@
                         'type': 'hillshade',
                         'source': 'hillshade_source',
                         'paint': {
-                            'hillshade-exaggeration': 1.0,
+                            'hillshade-exaggeration': hillshadeExaggeration,
                             'hillshade-illumination-anchor': 'map',
+                        }
+                    },
+                    {
+                        'id': 'nan',
+                        'type': 'raster',
+                        'source': 'nan_source',
+                        'paint': {
+                            'raster-resampling': 'linear',
+                            'raster-opacity': 0.8,
                         }
                     },
                 ],

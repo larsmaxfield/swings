@@ -141,11 +141,13 @@
                             type: 'raster',
                             url: `pmtiles://${PMTILES_URLS_RGB[0]}`,
                             attribution: r_m.attribution,
+                            tileSize: r_m.tileSize/2
                         },
                         'rgb_source2': {
                             type: 'raster',
                             url: `pmtiles://${PMTILES_URLS_RGB[1]}`,
                             attribution: r_m.attribution,
+                            tileSize: r_m.tileSize/2
                         },
                         'terrain': {
                             type: 'raster-dem',
