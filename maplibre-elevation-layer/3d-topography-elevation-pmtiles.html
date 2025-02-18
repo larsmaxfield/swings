@@ -8,43 +8,77 @@
     <link rel='stylesheet' href='./maplibre-gl.css' />
     <script src='./maplibre-gl.js'></script>
     <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+    <script src="https://unpkg.com/@mapbox/mapbox-gl-sync-move@0.3.1"></script>
     <style>
-        html, body { margin: 0; padding: 0; height: 100% }
-        body {
+        html, body {
+            background-color: color-mix(in srgb, Canvas, CanvasText 2.5%);
+            color: color-mix(in srgb, CanvasText, Canvas 5%);
+            color-scheme: dark;
+            height: 100%;
+            width: 100%;
             display: flex;
+            flex-flow: row;
+            margin: 0;
+            padding: 0;
         }
-        #container {
+        .viewer {
             flex: 1;
             display: flex;
             flex-direction: column;
+            background-color: black;
         }
-        #sliders {
+        .sliders {
             display: flex;
             flex-wrap: nowrap;
             flex-direction: row;
         }
         input[type="range"] {
+            width: 50%;
+        }
+        .map {
+            flex: 1;
+            height: 100%;
             width: 100%;
         }
-        #map {
-            flex: 1;
+        label {
+            font-size: 1.2em;
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="sliders">
+    <div class="viewer">
+        <div id="map1" class="map">
+        </div>
+        <div class="sliders">
+            <label for="checkbox-hillshade">Hillshade</label>
+            <input id="checkbox-hillshade" type="checkbox" checked>
+            <span>     </span>
+            <label for="checkbox-nan">NaN</label>
+            <input id="checkbox-nan" type="checkbox" checked>
+            <span>     </span>
+            <label for="slider-opacity" id="label-opacity">RGB</label>
+            <input type="range" min="0" max="1" value="0.3" id="slider-opacity" step="0.1">
+            <span>     </span>
+            <label for="slider-low">Colormap</label>
+            <span> </span>
             <label for="slider-low" id="label-low">Low: </label>
-            <input type="range" min="0" max="60000" value="0" id="slider-low" step="200" name="slider-low">
-            <input type="range" min="0" max="60000" value="0" id="slider-high" step="200" name="slider-high">
+            <input type="range" min="0" max="130000" value="0" id="slider-low" step="200" name="slider-low">
+            <input type="range" min="0" max="130000" value="0" id="slider-high" step="200" name="slider-high">
             <label for="slider-high" id="label-high">High: </label>
         </div>
-        <div id="map">
+    </div>
+    <div class="viewer">
+        <div id="map2" class="map">
+        </div>
+        <div class="sliders">
+            <label for="checkbox-hillshade-2">Hillshade</label>
+            <input id="checkbox-hillshade-2" type="checkbox" checked>
         </div>
     </div>
 <script>
     // Constants
-    const terrainExaggeration = 3.0;
+    const hillshadeExaggeration = 0.5;
+    const terrainExaggeration = 8.0;
     const terrainEncoding = "custom";
     const interval = 1.0;  // Amazon Terrarium 1.0
     const baseShift = 0.0;  // Amazon Terrarium 32768.0 (2^15)
@@ -56,24 +90,41 @@
     const protocol = new pmtiles.Protocol();
     maplibregl.addProtocol('pmtiles', protocol.tile);
 
-    // const PMTILES_URL_RGB = './rgb-direct.pmtiles';
-    // const PMTILES_URL_TERRAIN = './terrain-direct.pmtiles';
-    const PMTILES_URL_RGB = '../../maplibre-pmtiles/rgb.pmtiles';
-    const PMTILES_URL_TERRAIN = '../../maplibre-pmtiles/height.pmtiles';
-    // const PMTILES_URL_RGB = '../../maplibre-pmtiles/20240904_133046_stitched_rgb.pmtiles';
-    // const PMTILES_URL_TERRAIN = '../../maplibre-pmtiles/20240904_133046_stitched_height.pmtiles';
+    // Winter Landscape
+    // const PMTILES_URL_RGB = '../../maplibre-pmtiles/20250207_184219_stitched_rgb.pmtiles';
+    // const PMTILES_URL_TERRAIN = '../../maplibre-pmtiles/20250207_184219_stitched_height.pmtiles';
+    // const PMTILES_URL_NAN = '../../maplibre-pmtiles/20250207_184219_stitched_nan.pmtiles';
+
+    // Almond Blossom, Cracked
+    const PMTILES_URL_RGB = '../../maplibre-pmtiles/20250207_134249_stitched_rgb.pmtiles';
+    const PMTILES_URL_TERRAIN = '../../maplibre-pmtiles/20250207_134249_stitched_height.pmtiles';
+    const PMTILES_URL_NAN = '../../maplibre-pmtiles/20250207_134249_stitched_nan.pmtiles';
+
+    // Gray Stripes
+    // const PMTILES_URL_RGB = '../../maplibre-pmtiles/20250207_200257_stitched_rgb.gray.pmtiles';
+    // const PMTILES_URL_TERRAIN = '../../maplibre-pmtiles/20250207_200257_stitched_height.gray.pmtiles';
+    // const PMTILES_URL_NAN = '../../maplibre-pmtiles/20250207_200257_stitched_nan.gray.pmtiles';
+    
+    // Gray Stripes, centered PNG
+    // const PMTILES_URL_RGB = '../../maplibre-pmtiles/20250207_202412_stitched_rgb.gray.centre.png.pmtiles';
+    // const PMTILES_URL_TERRAIN = '../../maplibre-pmtiles/20250207_202412_stitched_height.gray.centre.png.pmtiles';
+    // const PMTILES_URL_NAN = '../../maplibre-pmtiles/20250207_202412_stitched_nan.gray.centre.png.pmtiles';
 
     const pr = new pmtiles.PMTiles(PMTILES_URL_RGB);
     const pt = new pmtiles.PMTiles(PMTILES_URL_TERRAIN);
+    const pn = new pmtiles.PMTiles(PMTILES_URL_NAN);
 
     protocol.add(pr);
     protocol.add(pt);
+    protocol.add(pn);
 
     const hm = [
         pr.getHeader(),
         pr.getMetadata(),
         pt.getHeader(),
         pt.getMetadata(),
+        pn.getHeader(),
+        pn.getMetadata(),
     ];
 
     const elevationEncoding = "custom"; 
@@ -82,6 +133,8 @@
     const elevationRedFactor = 256*256*elevationInterval;
     const elevationGreenFactor = 256*elevationInterval;
     const elevationBlueFactor = 1.0*elevationInterval;
+
+    const colormapOpacity = 1.0;
 
     const viridisShaderFunction =  `
         vec4 colormap(float t) {
@@ -93,7 +146,7 @@
             const vec3 c5 = vec3(4.776384997670288, -13.74514537774601, -65.35303263337234);
             const vec3 c6 = vec3(-5.435455855934631, 4.645852612178535, 26.3124352495832);
 
-            return vec4(c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6))))), 1.0);
+            return vec4(c0+t*(c1+t*(c2+t*(c3+t*(c4+t*(c5+t*c6))))), ${colormapOpacity});
         }
         `;
 
@@ -105,11 +158,11 @@
         const t_h = values[2];
         const t_m = values[3];
 
-        const overZoom = 2;
+        const overZoom = 1;
         const maxZoom = Math.max(r_h.maxZoom, t_h.maxZoom) + overZoom;
         const map = new maplibregl.Map({
             validateStyle: false,
-            container: 'map',
+            container: 'map1',
             zoom: 0,
             center: [-25, 25],
             bearing: -30,
@@ -127,7 +180,13 @@
                     'rgb_source': {
                         type: 'raster',
                         url: `pmtiles://${PMTILES_URL_RGB}`,
-                        attribution: r_m.attribution + ' · ' + t_m.attribution,
+                        attribution: r_m.attribution,
+                        tileSize: r_m.tileSize/2
+                    },
+                    'nan_source': {
+                        type: 'raster',
+                        url: `pmtiles://${PMTILES_URL_NAN}`,
+                        attribution: r_m.attribution,
                     },
                     'terrain_source': {
                         type: 'raster-dem',
@@ -163,11 +222,11 @@
                         type: 'elevation',
                         source: 'elevation_source',
                         paint: {
-                            'elevation-colormap-breakpoint-low': t_m.minHeight,
-                            'elevation-colormap-breakpoint-high': t_m.maxHeight,
+                            'elevation-colormap-breakpoint-low': t_m.minimum,
+                            'elevation-colormap-breakpoint-high': t_m.maximum,
                             'elevation-colormap-function': viridisShaderFunction,
-                            'elevation-colormap-lowcutoff': t_m.minHeight,
-                            'elevation-colormap-lowcutoff-color': '#ff00ff33',
+                            'elevation-colormap-lowcutoff': -1,
+                            'elevation-colormap-lowcutoff-color': '#ff00ff00',  // transparent magenta
                         },
                     },
                     {
@@ -175,8 +234,8 @@
                         'type': 'raster',
                         'source': 'rgb_source',
                         'paint': {
-                            'raster-resampling': 'linear',
-                            'raster-opacity': 0.0,
+                            'raster-resampling': 'nearest',
+                            'raster-opacity': 0.3,
                         }
                     },
                     {
@@ -184,9 +243,20 @@
                         'type': 'hillshade',
                         'source': 'hillshade_source',
                         'paint': {
-                            'hillshade-exaggeration': 1.0,
+                            'hillshade-exaggeration': hillshadeExaggeration,
                             'hillshade-illumination-anchor': 'map',
+                            'hillshade-highlight-color': '#ffffff00',
+                            'hillshade-accent-color': '#00000080',
                             'hillshade-shadow-color': '#000000',
+                        }
+                    },
+                    {
+                        'id': 'nan',
+                        'type': 'raster',
+                        'source': 'nan_source',
+                        'paint': {
+                            'raster-resampling': 'nearest',
+                            'raster-opacity': 1.0,
                         }
                     },
                 ],
@@ -196,6 +266,118 @@
                 },
             },
         });
+        const map2 = new maplibregl.Map({
+            validateStyle: false,
+            container: 'map2',
+            zoom: 0,
+            center: [-25, 25],
+            bearing: -30,
+            pitch: 63,
+            hash: true,
+            maxZoom: maxZoom,  // Max zoom + overzoom
+            maxPitch: 85,
+            renderWorldCopies: false,
+            allowUnderzoom: true,
+            underzoom: 80,
+            overpan: 50,
+            style: {
+                version: 8,
+                sources: {
+                    'rgb_source': {
+                        type: 'raster',
+                        url: `pmtiles://${PMTILES_URL_RGB}`,
+                        attribution: r_m.attribution,
+                        tileSize: r_m.tileSize/2
+                    },
+                    'nan_source': {
+                        type: 'raster',
+                        url: `pmtiles://${PMTILES_URL_NAN}`,
+                        attribution: r_m.attribution,
+                    },
+                    'terrain_source': {
+                        type: 'raster-dem',
+                        url: `pmtiles://${PMTILES_URL_TERRAIN}`,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    'elevation_source': {
+                        type: 'raster-dem',
+                        url: `pmtiles://${PMTILES_URL_TERRAIN}`,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    'hillshade_source': {
+                        type: 'raster-dem',
+                        url: `pmtiles://${PMTILES_URL_TERRAIN}`,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                },
+                layers: [
+                    // {
+                    //     id: 'elevs',
+                    //     type: 'elevation',
+                    //     source: 'elevation_source',
+                    //     paint: {
+                    //         'elevation-colormap-breakpoint-low': t_m.minimum,
+                    //         'elevation-colormap-breakpoint-high': t_m.maximum,
+                    //         'elevation-colormap-function': viridisShaderFunction,
+                    //         'elevation-colormap-lowcutoff': -1,
+                    //         'elevation-colormap-lowcutoff-color': '#ff00ff00',  // transparent magenta
+                    //     },
+                    // },
+                    {
+                        'id': 'raster',
+                        'type': 'raster',
+                        'source': 'rgb_source',
+                        'paint': {
+                            'raster-resampling': 'nearest',
+                            'raster-opacity': 1.0,
+                            // 'raster-saturation': 0.2,
+                            // 'raster-contrast': 0.5,
+                            // 'raster-brightness-min': 0.4,
+                        }
+                    },
+                    // {
+                    //     'id': 'hills',
+                    //     'type': 'hillshade',
+                    //     'source': 'hillshade_source',
+                    //     'paint': {
+                    //         'hillshade-exaggeration': hillshadeExaggeration,
+                    //         'hillshade-illumination-anchor': 'map',
+                    //         'hillshade-highlight-color': '#ffffff00',
+                    //         'hillshade-accent-color': '#000000',
+                    //         'hillshade-shadow-color': '#000000',
+                    //     }
+                    // },
+                    // {
+                    //     'id': 'nan',
+                    //     'type': 'raster',
+                    //     'source': 'nan_source',
+                    //     'paint': {
+                    //         'raster-resampling': 'nearest',
+                    //         'raster-opacity': 1.0,
+                    //     }
+                    // },
+                ],
+                terrain: {
+                    source: 'terrain_source',
+                    exaggeration: terrainExaggeration,
+                },
+            },
+        });
+
+        syncMaps(map, map2);
+        
         map.addControl(
             new maplibregl.NavigationControl({
                 visualizePitch: true,
@@ -214,10 +396,15 @@
         function setLowBreakpoint(value) {
             map.setPaintProperty(
                     'elevs',
+                    'elevation-colormap-lowcutoff',
+                    value - 1
+                );
+            map.setPaintProperty(
+                    'elevs',
                     'elevation-colormap-breakpoint-low',
                     value
                 );
-            document.getElementById('label-low').innerHTML = `${(value*t_m.metersPerHeight*1000).toFixed(1)} mm`;
+            document.getElementById('label-low').innerHTML = `${(value*t_m.metersPerInteger*1000).toFixed(1)} mm`;
             setTimeout(() => { // Required as a timeout, otherwise changes to paint props are not reflected
                 map.terrain.sourceCache.freeRtt();
                 map.terrain.sourceCache.sourceCache.reload();
@@ -230,30 +417,62 @@
                     'elevation-colormap-breakpoint-high',
                     value
                 );
-            document.getElementById('label-high').innerHTML = `${(value*t_m.metersPerHeight*1000).toFixed(1)} mm`;
+            document.getElementById('label-high').innerHTML = `${(value*t_m.metersPerInteger*1000).toFixed(1)} mm`;
             setTimeout(() => { // Required as a timeout, otherwise changes to paint props are not reflected
                 map.terrain.sourceCache.freeRtt();
                 map.terrain.sourceCache.sourceCache.reload();
             }, 200);
         };
 
+        function setLayerOpacity(layer_id, value) {
+            console.log(value);
+            map.setPaintProperty(
+                    layer_id,
+                    'raster-opacity',
+                    value
+                );
+            setTimeout(() => { // Required as a timeout, otherwise changes to paint props are not reflected
+                map.terrain.sourceCache.freeRtt();
+                map.terrain.sourceCache.sourceCache.reload();
+            }, 200);
+        };
+
+        function setLayerVisibilty(layer_id, value) {
+            map.setLayoutProperty(
+                    layer_id,
+                    'visibility',
+                    value ? "visible" : "none"
+                );
+        }
+
         function initLowBreakpoint(value) {
             setLowBreakpoint(value);
-            document.getElementById('slider-low').value = value;
             document.getElementById('slider-low').min = value;
+            document.getElementById('slider-low').value = value;
+            document.getElementById('slider-high').min = value;
         }
 
         function initHighBreakpoint(value) {
             setHighBreakpoint(value);
-            document.getElementById('slider-high').value = value;
+            document.getElementById('slider-low').max = value;
             document.getElementById('slider-high').max = value;
+            document.getElementById('slider-high').value = value;
         }
 
         map.on('load', () => {
-            initLowBreakpoint(t_m.minHeight);
-            initHighBreakpoint(t_m.maxHeight);
+            initLowBreakpoint(t_m.minimum);
+            initHighBreakpoint(t_m.maximum);
         });
 
+        ['change'].forEach( event => 
+            document.getElementById('checkbox-hillshade')
+            .addEventListener(event, (e) => setLayerVisibilty('hills', e.target.checked)));
+        ['change'].forEach( event => 
+            document.getElementById('checkbox-nan')
+            .addEventListener(event, (e) => setLayerVisibilty('nan', e.target.checked)));
+        ['mouseup', 'keyup'].forEach( event => 
+            document.getElementById('slider-opacity')
+            .addEventListener(event, (e) => setLayerOpacity('raster', parseFloat(e.target.value,10))));
         ['mouseup', 'keyup'].forEach( event => 
             document.getElementById('slider-low')
             .addEventListener(event, (e) => setLowBreakpoint(parseInt(e.target.value,10))));

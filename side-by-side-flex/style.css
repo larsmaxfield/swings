@@ -4,10 +4,10 @@ body {
 
 body * {
     -webkit-touch-callout: none;
-      -webkit-user-select: none;
-          -moz-user-select: none;
-          -ms-user-select: none;
-              user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 /* Assume tall */
@@ -21,8 +21,8 @@ body * {
     right: 20vw;
     background-color: bisque;
     background-image:
-      repeating-linear-gradient(#ccc 0 1px, transparent 1px 100%),
-      repeating-linear-gradient(90deg, #ccc 0 1px, transparent 1px 100%);
+        repeating-linear-gradient(#ccc 0 1px, transparent 1px 100%),
+        repeating-linear-gradient(90deg, #ccc 0 1px, transparent 1px 100%);
     background-size: calc(100%*calc(1/2)) calc(100%*calc(1/2));
     border: 1px black;
 }
@@ -62,9 +62,11 @@ body * {
     #map1 {
         background-color: lightblue;
     }
+
     #map2 {
         background-color: lightcoral;
     }
+
     #map3 {
         background-color: lightgreen;
     }

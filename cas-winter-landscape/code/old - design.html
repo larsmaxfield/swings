@@ -1,0 +1,490 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="./pkg/leaflet@1.7.1/leaflet.css" crossorigin=""/>
+    <script src="./pkg/leaflet@1.7.1/leaflet.js" crossorigin=""></script>
+    
+    <!-- Leaflet Sidebar -->
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./pkg/leaflet-sidebar-v2/leaflet-sidebar.css">
+    <script src="./pkg/leaflet-sidebar-v2/leaflet-sidebar.js"></script>
+
+    <!-- AnyChart JavaScript -->
+    <script src="https://cdn.anychart.com/releases/8.10.0/js/anychart-bundle.min.js"></script>
+
+     <link rel="stylesheet" href="./pkg/leaflet-fullscreen/Control.FullScreen.css"/>
+     <script src="./pkg/leaflet-fullscreen/Control.FullScreen.js"></script>
+
+     <script src="./pkg/leaflet.sync/L.Map.Sync.js"></script>
+
+     <link rel="stylesheet" href="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.css" crossorigin=""/>
+     <script src="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.min.js" crossorigin=""></script>
+
+     <link rel='stylesheet' href='./pkg/maplibre-gl@3.6.2/maplibre-gl.css' />
+     <script src='./pkg/maplibre-gl@3.6.2/maplibre-gl.js'></script>
+
+     <script src="./pkg/regenerator-runtime@0.14.0/runtime.js" type="text/javascript"></script>
+     <script src="./pkg/leaflet-topography@0.2.1/leaflet-topography.js" type="text/javascript"></script>
+     <style type="text/css">
+        html, body { 
+          width: 100%; 
+          height: 100%; 
+          padding: 0;
+          margin: 0;
+        }
+
+        /* Grid arrange */
+        .maps {
+            height: 100%;
+            width: 100%;
+            display: grid;
+            grid-template-rows: repeat(2, 1fr);
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        html, body, #map1, #map2, #map3 {
+          font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;
+          background-color: black;
+        }
+
+        .map1 {
+            grid-column: 1 / 3;
+            grid-row: 1 / -1;
+        }
+        .map2 {
+            grid-column: 3;
+            grid-row: 1;
+        }
+        .map3 {
+            grid-column: 4;
+            grid-row: 1;
+        }
+
+        .webgl {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .graph {
+            grid-column: 4;
+            grid-row: 2;
+        }
+
+        .tab {
+          display: inline-block;
+          padding: 10px 20px;
+          cursor: pointer;
+          background-color: #f0f0f0;
+          margin-right: 10px;
+        }
+        .active {
+          background-color: #ccc;
+        }
+
+        .map { 
+          width: 100%; 
+          height: 100%; 
+          background-color: rgb(0, 0, 0);
+        }
+
+        /* Other CSS styles */
+        .buttons {
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1000;
+                }
+                .button {
+                    margin: 5px;
+                    padding: 10px 20px;
+                    cursor: pointer;
+                    background-color: #f0f0f0;
+                    border: 1px solid #ccc;
+                }
+                .button:hover {
+                    background-color: #ccc;
+                }
+                .button.left {
+                    position: absolute;
+                    left: 100px;
+                }
+                .button.right {
+                    position: absolute;
+                    right: 100px;
+                }
+    </style>
+
+</head>
+<body>
+    <div id="maps" class = "maps">
+      <div id="map1" class="map1"></div>
+      <div id="map2" class="map2"></div>
+      <div id="map3" class="map3"></div>
+      <div id="webgl" class="webgl"></div>
+      <div id="graph" class="graph"></div>
+    </div>
+
+    <!-- Leaflet Sidebar Container -->
+    <div id="sidebar" class="leaflet-sidebar collapsed">
+        <!-- Leaflet Sidebar Content -->
+        <div class="leaflet-sidebar-tabs">
+            <ul role="tablist">
+
+            </ul>
+        </div>
+        <div class="leaflet-sidebar-content">
+            <!-- Your tab content panes go here -->
+        </div>
+    </div>
+    
+    <script>
+        const url_rgb = "../data-NOBACKUP/mockup-1/20230818_181639_stitched_rgb_terrain-rgb/{z}/{y}/{x}.png"
+        const url_h = "../data-NOBACKUP/mockup-1/20230818_181639_stitched_height_terrain-rgb/{z}/{y}/{x}.png"
+
+        const attribution1 = 'Color';
+        const attribution2 = 'Height';
+        const attribution3 = 'Gradient';
+        const fitBounds = false;
+        const tileSize = 256;
+        const crs = L.CRS.Simple;
+        const zoom = 2;
+        const maxNativeZoom = 7;
+        const maxZoom = maxNativeZoom + 2;
+        const maxBoundsViscosity = 0;
+        const detectRetina = false;
+        const zoomSnap = 0.1;
+        const attributionPrefix = 'Keyence';
+        const center_1_map = -80;
+        const center_2_map = 90;
+
+        var bounds_map = new L.LatLngBounds(new L.LatLng(center_1_map, center_2_map), new L.LatLng(center_1_map, center_2_map));
+        const optionsMap1 = {
+          center: [center_1_map, center_2_map],
+          crs: crs,
+          zoom: zoom,
+          maxZoom: maxZoom,
+          zoomControl: false,
+          zoomSnap: zoomSnap,
+          fullscreenControl: true,
+          // maxBounds: bounds_map,
+          // maxBoundsViscosity: maxBoundsViscosity
+        }       
+        const map1 = new L.map('map1', optionsMap1);
+        map1.attributionControl.setPrefix(attributionPrefix)
+        const rgbLayer1 = L.tileLayer(url_rgb, {
+            attribution: attribution1,
+            fitBounds: fitBounds,
+            tileSize: tileSize,
+            detectRetina: detectRetina,
+            maxZoom: maxZoom,
+            maxNativeZoom: maxNativeZoom,
+            noWrap: true,
+        }).addTo(map1);
+        L.control.scale(imperial=false).addTo(map1);
+        L.control.zoom({
+            position: 'topleft'
+        }).addTo(map1);
+  
+        const heightFunction = ((red, green, blue) =>
+            (0 + (red * 256 * 256 + green * 256 + blue) * 1.0)).toString();
+        L.Topography.configure({
+            heightFunction: heightFunction,
+        });
+
+        const map2 = L.map('map2', optionsMap1);
+        map2.attributionControl.setPrefix(attributionPrefix)
+        L.control.scale(imperial=false).addTo(map2);
+        L.control.zoom({
+            position: 'topleft'
+        }).addTo(map2);
+        const slopeaspectHeightLayer = new L.Topography.TopoLayer({
+            attribution: attribution3,
+            fitBounds: fitBounds,
+            tileSize: tileSize,
+            detectRetina: detectRetina,
+            maxZoom: maxZoom,
+            maxNativeZoom: maxNativeZoom,
+            topotype: "slopeaspect",
+            tilesUrl: url_h,
+            customization: { // Grayscale hillshade-esque vibes
+                colors: ['#ffffff', '#e5e5e5', '#cccccc', '#b2b2b2', '#999999', '#7f7f7f', 
+                    '#666666', '#4c4c4c', '#333333', '#191919', '#000000', '#191919', 
+                    '#333333', '#4c4c4c', '#666666', '#7f7f7f', '#999999', '#b2b2b2', 
+                    '#cccccc', '#e5e5e5', '#ffffff'], fallback: "#ffffff"}});
+        slopeaspectHeightLayer.addTo(map2);
+        // const colormap = ["#440154", "#46327f", "#365c8d", "#277f8e",
+        //    "#1fa187", "#4ac26d", "#9fda3a", "#fde725"];
+
+        const map3 = L.map('map3', optionsMap1);
+        map3.attributionControl.setPrefix(attributionPrefix)
+        const rgbLayer3 = L.tileLayer(url_h, {
+            attribution: attribution2,
+            fitBounds: fitBounds,
+            tileSize: tileSize,
+            detectRetina: detectRetina,
+            maxZoom: maxZoom,
+            maxNativeZoom: maxNativeZoom,
+            noWrap: true,
+        }).addTo(map3);
+        L.control.scale(imperial=false).addTo(map3);
+        L.control.zoom({
+            position: 'topleft'
+        }).addTo(map3);
+
+        map2.pm.addControls({  
+          position: 'topright',  
+          drawCircleMarker: false,
+          rotateMode: true,
+        });
+
+        map3.pm.addControls({  
+          position: 'topright',  
+          drawCircleMarker: false,
+          rotateMode: true,
+        });
+
+        map3.pm.setPathOptions({
+          color: 'violet',
+          fillColor: 'violet'
+        })
+
+        map2.sync(map3, {syncCursor: true});
+        map3.sync(map2, {syncCursor: true});
+
+        var sidebar = L.control.sidebar({
+            autopan: false,       // whether to maintain the centered map point when opening the sidebar
+            closeButton: true,   // whether to add a close button to the panes
+            container: 'sidebar', // the DOM container or #ID of the predefined sidebar container that should be used
+            position: 'left',    // left or right
+        }).addTo(map1);
+
+        // Add panels to the sidebar
+        sidebar.addPanel({
+            id: 'panel1',
+            tab: '<i class="fa fa-pencil fa-fw"></i>',
+            pane: 'Overview with all annotations',
+            title: 'All annotations',
+            position: 'top'
+        });
+
+        sidebar.addPanel({
+            id: 'panel2',
+            tab: '<i class="fa fa-user"></i>',
+            pane: 'Overview with annotations that still have to be checked',
+            title: 'Cracks to be checked',
+            position: 'top'
+        });
+
+        sidebar.addPanel({
+            id: 'panel3',
+            tab: '<i class="fa fa-check"></i>',
+            pane: 'Overview with annotations that have been verified',
+            title: 'Verified cracks',
+            position: 'top'
+        });
+
+        // Listen for sidebar content events
+        sidebar.on('content', function(e) {
+            console.log('Opened panel with ID:', e.id);
+        });
+
+        // Create AnyChart graph
+        anychart.onDocumentReady(function () {
+            // Define data
+            var data = [
+              ["2003", 1, 0, 0],
+              ["2004", 4, 0, 0],
+              ["2005", 6, 0, 0],
+              ["2006", 9, 1, 0],
+              ["2007", 12, 2, 0],
+              ["2008", 13, 5, 1],
+              ["2009", 15, 6, 1],
+              ["2010", 16, 9, 1],
+              ["2011", 16, 10, 4],
+              ["2012", 0, 11, 0],
+              ["2013", 17, 0, 6],
+              ["2014", 17, 14, 7],
+              ["2015", 17, 14, 10],
+              ["2016", 17, 14, 12],
+              ["2017", 19, 16, 12],
+              ["2018", 20, 17, 14],
+              ["2019", 20, 19, 16],
+              ["2020", 20, 20, 17],
+              ["2021", 20, 20, 20],
+              ["2022", 20, 22, 20]
+            ];
+
+            var dataSet = anychart.data.set(data);
+            var chart = anychart.line();
+
+            // Add series to the chart
+            chart.line(dataSet.mapAs({ x: 0, value: 1 })).name("Line 1");
+            chart.line(dataSet.mapAs({ x: 0, value: 2 })).name("Line 2");
+            chart.line(dataSet.mapAs({ x: 0, value: 3 })).name("Line 3");
+
+            // Add legend and title
+            chart.legend().enabled(true);
+            chart.title("Example height graph");
+            chart.xAxis().title('Length')
+            chart.yAxis().title('Height (mm)')
+
+            // Set the container where the chart will be drawn
+            chart.container("graph");
+            chart.fullScreen(true);
+
+            // Draw the chart
+            chart.draw();
+        });
+
+        ///////
+        const terrainExaggeration = 1; // Good with 0.005 interval // 0 to inf
+        const hillshadeExaggeration = 0.5; // Good with 0.005 interval //0 to 1
+        const terrainTiles = ["../../data-NOBACKUP/mockup-1_test/20231215_180420_stitched_height_terrain_inv0-05_z-1u/{z}/{y}/{x}.png"]; 
+        const terrainTileSize = 256;
+
+        const terrainEncoding = "custom";
+        const interval = 1;
+        const baseShift = 0.0; // Will be subtracted from
+        const redFactor = 256*256*interval;
+        const greenFactor = 256*interval;
+        const blueFactor = 1.0*interval;
+
+        const webgl = new maplibregl.Map({
+            container: 'webgl',
+            hash: true,
+            renderWorldCopies: false,
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: ["../../data-NOBACKUP/mockup-1_test/20231215_180420_stitched_rgb/{z}/{y}/{x}.png" ],
+                        tileSize: 256,
+                        attribution: 'Keyence Color & Height',
+                    },
+                    // Use a different source for terrain and hillshade layers, to improve render quality
+                    terrainSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    },
+                    hillshadeSource: {
+                        type: 'raster-dem',
+                        tiles: terrainTiles,
+                        tileSize: terrainTileSize,
+                        encoding: terrainEncoding,
+                        redFactor: redFactor,
+                        greenFactor: greenFactor,
+                        blueFactor: blueFactor,
+                        baseShift: baseShift,
+                    }
+                },
+                layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm'
+                    },
+                    {
+                        id: 'hills',
+                        type: 'hillshade',
+                        source: 'hillshadeSource',
+                        layout: {visibility: 'visible'},
+                        paint: { // https://maplibre.org/maplibre-style-spec/layers/#hillshade
+                            'hillshade-illumination-anchor': "map", // default "viewport"
+                            'hillshade-illumination-direction': 300, // default 335
+                            'hillshade-highlight-color': '#ffffff', // default "#FFFFFF"
+                            'hillshade-accent-color': '#000000', // default "#000000"
+                            'hillshade-shadow-color': '#000000', // default "#000000"
+                            'hillshade-exaggeration': hillshadeExaggeration // default 0.5
+                        }
+                    }
+                ],
+                terrain: {
+                    source: 'terrainSource',
+                    exaggeration: terrainExaggeration,
+                }
+            },
+            maxZoom: 18,
+            maxPitch: 85
+        });
+
+        webgl.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            })
+        );
+
+        webgl.addControl(
+            new maplibregl.TerrainControl({
+                source: 'terrainSource',
+                exaggeration: terrainExaggeration,
+            })
+        );
+
+        // Need to solve "Style not finished loading"; perhaps with 'map on load'?
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+        const rakingLoop = async () => {
+                for (let i = 270; i < 360; i++) {
+                    map.setPaintProperty(
+                        'hills',
+                        'hillshade-illumination-direction',
+                        i
+                    )
+                    if(i === 270) {
+                        i=-1; continue;
+                    }
+                    await delay(20);
+                };
+            }
+
+        setTimeout(function(){
+            rakingLoop();
+        }, 2000);
+
+        // Slider for transparency of hillshade intensity
+        setTimeout(function(){
+            map.setPaintProperty(
+                'hills',
+                'hillshade-illumination-direction',
+                0
+            )
+        }, 20);
+
+        // Create the control
+        var checkboxesControl = L.control({position: 'topleft'});
+        checkboxesControl.onAdd = function (map3) {
+            var div = L.DomUtil.create('div', 'command');
+            div.innerHTML = '<form>' +
+                                '<div><input id="checkbox1" type="checkbox"/><label for="checkbox1">RGB</label></div>' +
+                                '<div><input id="checkbox2" type="checkbox"/><label for="checkbox2">Height</label></div>' +
+                                '<div><input id="checkbox3" type="checkbox"/><label for="checkbox3">Gradient</label></div>' +
+                                '<div><input id="checkbox4" type="checkbox"/><label for="checkbox4">Plain</label></div>' +
+                                '<div><input id="checkbox5" type="checkbox"/><label for="checkbox5">2D</label></div>' +
+                                '<div><input id="checkbox6" type="checkbox"/><label for="checkbox6">3D</label></div>' +
+                                '<div><input id="checkbox6" type="checkbox"/><label for="checkbox6">3D with light</label></div>' +
+                            '</form>';
+            return div;
+        };
+        checkboxesControl.addTo(map3);            
+    </script>
+</body>
+</html>
+

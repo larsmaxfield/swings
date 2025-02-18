@@ -1,0 +1,453 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Leaflet Color, Colormap, Slope-Aspect</title>
+    <link rel="stylesheet" href="./pkg/leaflet@1.7.1/leaflet.css" crossorigin=""/>
+    <script src="./pkg/leaflet@1.7.1/leaflet.js" crossorigin=""></script>
+    
+    <link rel="stylesheet" href="./css/leaflet-crisp.css" crossorigin=""/>
+
+    <link rel="stylesheet" href="./pkg/leaflet.magnifyingglass/leaflet.magnifyingglass.css" crossorigin=""/>
+    <script src="./pkg/leaflet.magnifyingglass/leaflet.magnifyingglass.js" crossorigin=""></script>
+
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./pkg/leaflet-sidebar-v2/leaflet-sidebar.css">
+
+    <script src="./pkg/leaflet.sync/L.Map.Sync.js"></script>
+
+    <script src="./pkg/regenerator-runtime@0.14.0/runtime.js" type="text/javascript"></script>
+    <script src="./pkg/leaflet-topography@0.2.1/leaflet-topography.js" type="text/javascript"></script>
+    <script src="./pkg/rainbowvis-js/rainbowvis.js" type="text/javascript"></script>
+
+    <!-- <link rel="stylesheet" href="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.css" crossorigin=""/>
+    <script src="./pkg/leaflet-geoman-free@2.14.2/leaflet-geoman.min.js" crossorigin=""></script> -->
+
+    <style type="text/css">
+        html, body { 
+          width: 100%; 
+          height: 100%; 
+          padding: 0;
+          margin: 0;
+        }
+        html, body, #map1, #map2, #map3 {
+          font: 10pt "Helvetica Neue", Arial, Helvetica, sans-serif;
+          background-color: black;
+        }
+
+        /* Grid arrange */
+        .maps {
+            height: 100%;
+            width: 100%;
+            display: grid;
+            grid-template-rows: repeat(1, 1fr);
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .map1 {
+            grid-column: 1;
+            /* grid-row: 1 / -1; */
+        }
+        .map2 {
+            grid-column: 2;
+            /* grid-row: 1; */
+        }
+        .map3 {
+            grid-column: 3;
+            /* grid-row: 2; */
+        }
+
+        .lorem {
+            font-style: italic;
+            color: #AAA;
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- optionally define the sidebar content via HTML markup -->
+    <!-- REMOTE "hidden=true" TO SHOW -->
+    <!-- REMOTE "hidden=true" TO SHOW -->
+    <!-- REMOTE "hidden=true" TO SHOW -->
+    <!-- REMOTE "hidden=true" TO SHOW -->
+    <!-- REMOTE "hidden=true" TO SHOW -->
+    <div id="sidebar" class="leaflet-sidebar collapsed" hidden=true>
+
+      <!-- nav tabs -->
+      <div class="leaflet-sidebar-tabs">
+          <!-- top aligned tabs -->
+          <ul role="tablist">
+              <li><a href="#home" role="tab"><i class="fa fa-bars"></i></a></li>
+              <li><a href="#autopan" role="tab"><i class="fa fa-arrows"></i></a></li>
+          </ul>
+
+          <!-- bottom aligned tabs -->
+          <ul role="tablist">
+              <li><a href="#gear"><i class="fa fa-gear"></i></a></li>
+          </ul>
+      </div>
+
+      <!-- panel content -->
+      <div class="leaflet-sidebar-content">
+          <div class="leaflet-sidebar-pane" id="home">
+              <h1 class="leaflet-sidebar-header">
+                  CAS Viewer
+                  <span class="leaflet-sidebar-close"><i class="fa fa-caret-left"></i></span>
+              </h1>
+
+              <p>A responsive sidebar for the mapping library <a href="https://leafletjs.com/">Leaflet</a>.</p>
+              <p>Compatible with version 0.7 and 1.x (tested up to 1.6.0)</p>
+              <p><b>Select the other panes for a showcase of each feature.</b></p>
+
+              <h2>More examples</h2>
+              <ul>
+                  <li><a href="./position-right.html">Right aligned</a></li>
+                  <li><a href="./halfheight.html">The sidebar adapts to map container size</a></li>
+                  <li><a href="./leaflet-0.7.html">Proof that it works with leaflet 0.7</a></li>
+              </ul>
+
+              <p class="lorem">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</p>
+              <p class="lorem">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</p>
+              <p class="lorem">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</p>
+              <p class="lorem">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</p>
+          </div>
+
+          <div class="leaflet-sidebar-pane" id="autopan">
+              <h1 class="leaflet-sidebar-header">
+                  autopan
+                  <span class="leaflet-sidebar-close"><i class="fa fa-caret-left"></i></span>
+              </h1>
+              <p>
+                  <code>Leaflet.control.sidebar({ autopan: true })</code>
+                  makes shure that the map center always stays visible.
+              </p>
+              <p>
+                  The autopan behviour is responsive as well.
+                  Try opening and closing the sidebar from this pane!
+              </p>
+          </div>
+
+          <div class="leaflet-sidebar-pane" id="messages">
+              <h1 class="leaflet-sidebar-header">Messages<span class="leaflet-sidebar-close"><i class="fa fa-caret-left"></i></span></h1>
+          </div>
+        </div>
+    </div>
+    
+    <div id="maps" class = "maps">
+        <div id="map1" class="map1"></div>
+        <div id="map2" class="map2"></div>
+        <div id="map3" class="map3"></div>
+    </div>
+
+    <script src="./pkg/leaflet-sidebar-v2/leaflet-sidebar.js"></script>
+
+    <script type="text/javascript">
+        //const urlA = "../data-NOBACKUP/mockup-1/20231215_180420_stitched_rgb/{z}/{y}/{x}.png"; // Stitched
+        // const urlA = "./data/terrain-rgb/20231114_000000_28_rgb/{z}/{y}/{x}.png"; // Single Keyence capture
+        const attributionA = 'Color';
+        //const urlB = "../data-NOBACKUP/mockup-1/20231215_180420_stitched_height_terrain_inv1_z-1i/{z}/{y}/{x}.png"; // Stitched
+        // const urlB = "./data/terrain-rgb/20231114_000000_28_height_terrainRGB/{z}/{y}/{x}.png"; // Single Keyence capture
+        const urlA = "../data-NOBACKUP/mockup-1/20230818_181639_stitched_rgb_terrain-rgb/{z}/{y}/{x}.png"
+        const urlB = "../data-NOBACKUP/mockup-1/20230818_181639_stitched_height_terrain-rgb/{z}/{y}/{x}.png"
+        
+        const attributionB = 'Height';
+
+        const fitBounds = false;
+        const tileSizeA = 256;
+        const tileSizeB = 256
+
+        const center = [-80, 90];
+        const crs = L.CRS.Simple;
+        const zoom = 2;
+        const maxNativeZoom = 7; // Maximum zoom level provided in tileset
+        const maxZoom = maxNativeZoom + 4;
+        const detectRetina = true;
+        const zoomSnap = 1;
+
+        const attributionPrefix = 'Keyence';
+
+        const heightFunction = ((red, green, blue) =>
+            (0 + (red * 256 * 256 + green * 256 + blue) * 1.0)).toString(); // Stitched
+            // (-10000 + (red * 256 * 256 + green * 256 + blue) * 0.05)).toString(); // Single Keyence capture
+        
+        const optionsMap = {
+          center: center,
+          crs: crs,
+          zoom: zoom,
+          maxZoom: maxZoom,
+          zoomControl: false,
+          zoomSnap: zoomSnap,
+        }
+
+        L.Topography.configure({
+            heightFunction: heightFunction,
+        });
+
+        const map1 = L.map('map1', optionsMap);
+        map1.attributionControl.setPrefix(attributionPrefix)
+
+        const map2 = L.map('map2', optionsMap);
+        map2.attributionControl.setPrefix(attributionPrefix)
+
+        const map3 = L.map('map3', optionsMap);
+        map3.attributionControl.setPrefix(attributionPrefix)
+        L.control.zoom({
+            position: 'bottomright'
+        }).addTo(map3);
+
+        map1.sync(map2, {syncCursor: true});
+        map2.sync(map1, {syncCursor: true});
+
+        map1.sync(map3, {syncCursor: true});
+        map2.sync(map3, {syncCursor: true});
+
+        map3.sync(map1, {syncCursor: true});
+        map3.sync(map2, {syncCursor: true});
+
+
+        const rgbLayer = L.tileLayer(urlA, {
+            attribution: attributionA,
+            fitBounds: fitBounds,
+            tileSize: tileSizeA,
+            detectRetina: detectRetina,
+            maxZoom: maxZoom,
+            maxNativeZoom: maxNativeZoom-1, // Needed, but not known why. Perhaps retina?
+        }).addTo(map1);
+
+        function linspace(start, stop, num, endpoint = true) {
+            const div = endpoint ? (num - 1) : num;
+            const step = (stop - start) / div;
+            return Array.from({length: num}, (_, i) => start + step * i);
+        }
+
+        // // Slope
+        // const slopeaspectHeightLayer = new L.Topography.TopoLayer({
+        //     attribution: attributionB + ' (Slope)',
+        //     fitBounds: fitBounds,
+        //     tileSize: 256,
+        //     detectRetina: detectRetina,
+        //     maxZoom: maxZoom,
+        //     maxNativeZoom: maxNativeZoom,
+        //     topotype: "slope",
+        //     tilesUrl: urlB,
+        //     customization: {
+        //         colors: ['#000000', '#7f7f7f', '#ffffff'],
+        //         breakpoints: [89, 89.5, 90],
+        //         continuous: true,
+        //     },
+        // });
+        // slopeaspectHeightLayer.addTo(map2);
+
+        // // Aspect
+        // const slopeaspectHeightLayer = new L.Topography.TopoLayer({
+        //     attribution: attributionB + ' (Aspect)',
+        //     fitBounds: fitBounds,
+        //     tileSize: 256,
+        //     detectRetina: detectRetina,
+        //     maxZoom: maxZoom,
+        //     maxNativeZoom: maxNativeZoom,
+        //     topotype: "aspect",
+        //     tilesUrl: urlB,
+        //     customization: {
+        //         // colors: ['#303E73', '#7A85AD', '#515E90', '#ca009c', '#303E73'],
+        //         colors: [
+        //             '#ffffff',
+        //             '#e5e5e5', 
+        //             '#cccccc', 
+        //             '#b2b2b2', 
+        //             '#999999', 
+        //             '#7f7f7f', 
+        //             '#666666', 
+        //             '#4c4c4c', 
+        //             '#333333', 
+        //             '#191919', 
+        //             '#000000',
+        //             '#191919', 
+        //             '#333333', 
+        //             '#4c4c4c', 
+        //             '#666666', 
+        //             '#7f7f7f', 
+        //             '#999999', 
+        //             '#b2b2b2', 
+        //             '#cccccc', 
+        //             '#e5e5e5', 
+        //             '#ffffff',
+        //             ],
+        //         // continuous: true,
+        //     },
+        // });
+        // slopeaspectHeightLayer.addTo(map2);
+
+        // Slope-Aspect
+        const slopeaspectHeightLayer = new L.Topography.TopoLayer({
+            attribution: attributionB + ' (Slope-Aspect)',
+            fitBounds: fitBounds,
+            tileSize: tileSizeB,
+            detectRetina: detectRetina,
+            maxZoom: maxZoom,
+            maxNativeZoom: maxNativeZoom,
+            topotype: "slopeaspect",
+            tilesUrl: urlB,
+            customization: { // ESRI interpolated https://www.esri.com/arcgis-blog/products/imagery/imagery/new-aspect-slope-raster-function-now-available/
+                colors: [
+                    '#8dd600',
+                    '#61C11F',
+                    '#34ab3e',
+                    '#2C8A81',
+                    '#2469c3',
+                    '#4736B5',
+                    '#6903a6',
+                    '#9602A2',
+                    '#c2009e', 
+                    '#DC2A82',
+                    '#f55366', 
+                    '#F77F51',
+                    '#f8aa3b', 
+                    '#F6D21E',
+                    '#f3fa00', 
+                    '#C0E800',
+                    '#8dd600', 
+                    ],
+            },
+            // customization: { // Grayscale hillshade-esque vibes
+            //     colors: [
+            //         '#ffffff',
+            //         '#e5e5e5', 
+            //         '#cccccc', 
+            //         '#b2b2b2', 
+            //         '#999999', 
+            //         '#7f7f7f', 
+            //         '#666666', 
+            //         '#4c4c4c', 
+            //         '#333333', 
+            //         '#191919', 
+            //         '#000000',
+            //         '#191919', 
+            //         '#333333', 
+            //         '#4c4c4c', 
+            //         '#666666', 
+            //         '#7f7f7f', 
+            //         '#999999', 
+            //         '#b2b2b2', 
+            //         '#cccccc', 
+            //         '#e5e5e5', 
+            //         '#ffffff',
+            //         ],
+            //     fallback: "#ffffff",
+            // },
+        });
+        slopeaspectHeightLayer.addTo(map3);
+
+        // // Single Keyence capture 28 from December 2023
+
+        // Stitched
+        const nanColor = "ffffff";
+        const colormap = [ // Viridis
+            "#440154",
+            "#46327f",
+            "#365c8d",
+            "#277f8e",
+            "#1fa187",
+            "#4ac26d",
+            "#9fda3a",
+            "#fde725"
+        ];
+        const empty = [];
+        const colors = empty.concat(
+            nanColor, nanColor, colormap.at(0),
+            colormap,
+            colormap.at(-1))
+
+        const nanBreakpoints = [-1, 0, 1];
+        // const colormapBreakpoints = linspace(2, 22000, num=8);
+        const colormapBreakpoints = linspace(13000, 18500, num=8);
+        const elevationBreakpoints = nanBreakpoints.concat(colormapBreakpoints);
+        elevationBreakpoints.push(2**16)
+
+        const elevationslopeaspectHeightLayer = new L.Topography.TopoLayer({
+            attribution: attributionB + ' (Elevation)',
+            fitBounds: fitBounds,
+            tileSize: 256,
+            detectRetina: detectRetina,
+            maxZoom: maxZoom,
+            maxNativeZoom: maxNativeZoom,
+            topotype: "elevation",
+            tilesUrl: urlB,
+            customization: { // Breakpoints and colors not working lekker? Confirm the height function matches your data :)
+              breaksAt0: false,
+              colors: colors,
+              breakpoints: elevationBreakpoints,
+            //   continuous: false,
+            },
+        });
+        elevationslopeaspectHeightLayer.addTo(map2);
+
+
+        // Add annotation tools
+        map3.pm.addControls({  
+          position: 'topright',  
+          drawCircleMarker: false,
+          rotateMode: true,
+        });
+
+        const magnifiedTiles = L.tileLayer(urlA, {
+            maxZoom: 20,
+            maxNativeZoom: 6,
+        });
+
+        // Add magnifying glass
+        const magnifyingGlass = L.magnifyingGlass({
+            layers: [ magnifiedTiles ],
+            zoomOffset: 2,
+        }).addTo(map1);
+
+        // Remove magnifying glass
+        magnifyingGlass.remove()
+
+        // create the sidebar instance and add it to the map
+        var sidebar = L.control.sidebar({ container: 'sidebar' })
+            .addTo(map1);
+
+        // add panels dynamically to the sidebar
+        sidebar
+            .addPanel({
+                id:   'js-api',
+                tab:  '<i class="fa fa-gear"></i>',
+                title: 'JS API',
+                pane: '<p>The Javascript API allows to dynamically create or modify the panel state.<p/><p><button onclick="sidebar.enablePanel(\'mail\')">enable mails panel</button><button onclick="sidebar.disablePanel(\'mail\')">disable mails panel</button></p><p><button onclick="addUser()">add user</button></b>',
+            })
+            // add a tab with a click callback, initially disabled
+            .addPanel({
+                id:   'mail',
+                tab:  '<i class="fa fa-envelope"></i>',
+                title: 'Messages',
+                button: function() { alert('opened via JS callback') },
+                disabled: true,
+            })
+
+        // be notified when a panel is opened
+        sidebar.on('content', function (ev) {
+            switch (ev.id) {
+                case 'autopan':
+                sidebar.options.autopan = true;
+                break;
+                default:
+                sidebar.options.autopan = false;
+            }
+        });
+
+        var userid = 0
+        function addUser() {
+            sidebar.addPanel({
+                id:   'user' + userid++,
+                tab:  '<i class="fa fa-user"></i>',
+                title: 'User Profile ' + userid,
+                pane: '<p>user ipsum dolor sit amet</p>',
+            });
+        }
+
+    </script>
+    
+</body>
+</html>
