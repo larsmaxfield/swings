@@ -1,0 +1,1 @@
+var s;const a=((s=globalThis.__sveltekit_19r4il3)==null?void 0:s.base)??"/swings/cas-viewer";var e;const t=((e=globalThis.__sveltekit_19r4il3)==null?void 0:e.assets)??a;export{t as a,a as b};
