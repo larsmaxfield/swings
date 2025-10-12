@@ -270,11 +270,13 @@
         const extendPan = parseFloat(document.getElementById('extend-pan-slider').value);
         _extendPanPercent = extendPan;
         document.getElementById('extend-pan-label').textContent = `Extend pan (${zeroPad(extendPan, 2)}%)`;
-        map.setZoom(-100);
+        map.fitBounds(map.getBounds())
     }
     function selectMaxBoundsFromUi() {
         const option = document.getElementById('max-bounds-select').value;
         map.setMaxBounds(bounds_options[option].bounds);
+        map.fitBounds(map.getBounds())
+        map.triggerRepaint();
         map.setCenter(bounds_options[option].center);
         map.setZoom(-100);
     }
@@ -341,7 +343,6 @@
         selectMaxBoundsFromUi();
         setExtendPanFromUi();
         setExtendScaleFromUi();
-        setZoom(-100);
     });
 </script>
 </body>
