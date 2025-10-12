@@ -265,6 +265,7 @@
         _extendScalePercent = extendScale;
         document.getElementById('extend-scale-label').textContent = `Extend scale (${zeroPad(extendScale, 2)}%)`;
         map.setZoom(-Number.MIN_VALUE);
+        map.resize();
     }
     function setExtendPanFromUi() {
         const extendPan = parseFloat(document.getElementById('extend-pan-slider').value);
@@ -277,6 +278,7 @@
         map.setMaxBounds(bounds_options[option].bounds);
         map.setCenter(bounds_options[option].center);
         map.setZoom(-Number.MIN_VALUE);
+        map.resize();
     }
 
     map.on('load', () => {
