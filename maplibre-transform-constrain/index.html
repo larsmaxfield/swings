@@ -264,21 +264,19 @@
         const extendScale = parseFloat(document.getElementById('extend-scale-slider').value);
         _extendScalePercent = extendScale;
         document.getElementById('extend-scale-label').textContent = `Extend scale (${zeroPad(extendScale, 2)}%)`;
-        map.setZoom(-Number.MIN_VALUE);
-        map.resize();
+        map.setZoom(-100);
     }
     function setExtendPanFromUi() {
         const extendPan = parseFloat(document.getElementById('extend-pan-slider').value);
         _extendPanPercent = extendPan;
         document.getElementById('extend-pan-label').textContent = `Extend pan (${zeroPad(extendPan, 2)}%)`;
-        map.resize();
+        map.setZoom(-100);
     }
     function selectMaxBoundsFromUi() {
         const option = document.getElementById('max-bounds-select').value;
         map.setMaxBounds(bounds_options[option].bounds);
         map.setCenter(bounds_options[option].center);
-        map.setZoom(-Number.MIN_VALUE);
-        map.resize();
+        map.setZoom(-100);
     }
 
     map.on('load', () => {
@@ -340,9 +338,10 @@
         document.getElementById('extend-scale-slider').addEventListener('input', setExtendScaleFromUi);
         document.getElementById('extend-pan-slider').addEventListener('input', setExtendPanFromUi);
         document.getElementById('max-bounds-select').addEventListener('change', selectMaxBoundsFromUi);
-        setExtendScaleFromUi();
-        setExtendPanFromUi();
         selectMaxBoundsFromUi();
+        setExtendPanFromUi();
+        setExtendScaleFromUi();
+        setZoom(-100);
     });
 </script>
 </body>
