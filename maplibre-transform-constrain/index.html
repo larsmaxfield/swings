@@ -86,15 +86,15 @@
     let _extendPanPercent = 0;
 
     function underzoomTransformConstrain(lngLat, zoom) {
-        zoom = clamp(+zoom, this.minZoom, this.maxZoom);
+        zoom = clamp(+zoom, this._minZoom, this._maxZoom);
         const result = {
             center: new maplibregl.LngLat(lngLat.lng, lngLat.lat),
             zoom
         };
 
-        let lngRange = this._helper._lngRange;
+        let lngRange = this._lngRange;
 
-        if (!this._helper._renderWorldCopies && lngRange === null) {
+        if (!this._renderWorldCopies && lngRange === null) {
             const almost180 = 180 - 1e-10;
             lngRange = [-almost180, almost180];
         }
@@ -113,8 +113,8 @@
                 clamp(_extendScalePercent, 0, 100) / 100 :
                 1.0;
 
-        if (this._helper._latRange) {
-            const latRange = this._helper._latRange;
+        if (this._latRange) {
+            const latRange = this._latRange;
             minY = mercatorYfromLat(latRange[1]) * worldSize;
             maxY = mercatorYfromLat(latRange[0]) * worldSize;
             const shouldZoomIn = maxY - minY < (underzoom * screenHeight);
@@ -152,7 +152,7 @@
             const newPoint = new maplibregl.Point(
                 scaleX ? (maxX + minX) / 2 : originalX,
                 scaleY ? (maxY + minY) / 2 : originalY);
-            if (this._helper._renderWorldCopies) result.center = unprojectFromWorldCoordinates(worldSize, newPoint).wrap();
+            if (this._renderWorldCopies) result.center = unprojectFromWorldCoordinates(worldSize, newPoint).wrap();
             result.zoom += scaleZoom(scale);
             return result;
         }
@@ -173,7 +173,7 @@
         const lngPanScale = 1.0 - lngOverpan;
         const latPanScale = 1.0 - latOverpan;
 
-        if (this._helper._latRange) {
+        if (this._latRange) {
             const h2 = latPanScale * screenHeight / 2;
             if (originalY - h2 < minY) modifiedY = minY + h2;
             if (originalY + h2 > maxY) modifiedY = maxY - h2;
@@ -182,7 +182,7 @@
         if (lngRange) {
             const centerX = (minX + maxX) / 2;
             let wrappedX = originalX;
-            if (this._helper._renderWorldCopies) {
+            if (this._renderWorldCopies) {
                 wrappedX = wrap(originalX, centerX - worldSize / 2, centerX + worldSize / 2);
             }
             const w2 = lngPanScale * screenWidth / 2;
@@ -195,11 +195,15 @@
         if (modifiedX !== undefined || modifiedY !== undefined) {
             const newPoint = new maplibregl.Point(modifiedX ?? originalX, modifiedY ?? originalY);
             result.center = unprojectFromWorldCoordinates(worldSize, newPoint).wrap();
-            if (this._helper._renderWorldCopies) result.center = result.center.wrap();
+            if (this._renderWorldCopies) result.center = result.center.wrap();
         }
 
         return result;
     }
+
+    function identityTransformConstrain(lngLat, zoom) {
+        return {center: lngLat, zoom: zoom ?? 0};
+    };
 
     const map = new maplibregl.Map({
         container: 'map',
@@ -260,7 +264,7 @@
         const extendScale = parseFloat(document.getElementById('extend-scale-slider').value);
         _extendScalePercent = extendScale;
         document.getElementById('extend-scale-label').textContent = `Extend scale (${zeroPad(extendScale, 2)}%)`;
-        map.setZoom(-Infinity);
+        map.setZoom(-Number.MIN_VALUE);
     }
     function setExtendPanFromUi() {
         const extendPan = parseFloat(document.getElementById('extend-pan-slider').value);
@@ -272,7 +276,7 @@
         const option = document.getElementById('max-bounds-select').value;
         map.setMaxBounds(bounds_options[option].bounds);
         map.setCenter(bounds_options[option].center);
-        map.setZoom(-Infinity);
+        map.setZoom(-Number.MIN_VALUE);
     }
 
     map.on('load', () => {
