@@ -1,0 +1,82 @@
+<html>
+    <head>
+        <title>5.13.0: Pitched terrain at high latitude</title>
+        <meta charset="utf-8"/>
+        <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.css" crossorigin="anonymous">
+        <script src="https://unpkg.com/maplibre-gl@5.13.0/dist/maplibre-gl.js" crossorigin="anonymous"></script>
+        <style>
+            body {
+                margin: 0;
+            }
+            #map {
+                height:100%; width:100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map"></div>
+        <script type="text/javascript">
+
+            const map = new maplibregl.Map({
+              container: "map",
+              zoom: 3,
+              bearing: 0,
+              pitch: 60,
+              center: [0, 90],
+              style: {
+                version: 8,
+                sources: {
+                  raster_source: {
+                    type: 'raster',
+                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    attribution: '&copy; OpenStreetMap Contributors',
+                    maxzoom: 19
+                  },
+                  hillshade_source: {
+                    type: "raster-dem",
+                      url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
+                      tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                      encoding: "terrarium",
+                  },
+                  terrain_source: {
+                    type: "raster-dem",
+                      url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
+                      tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+                      encoding: "terrarium",
+                  },
+                },
+                layers: [
+                  {
+                    id: "raster",
+                    source: "raster_source",
+                    type: "raster",
+                  },
+                  {
+                    id: "hillshade",
+                    source: "hillshade_source",
+                    type: "hillshade",
+                  },
+                ],
+                terrain: {
+                  source: "terrain_source"
+                },
+              },
+            });
+
+            map.addControl(
+                new maplibregl.NavigationControl({
+                    visualizePitch: true,
+                    showZoom: true,
+                    showCompass: true
+                })
+            );
+            map.addControl(
+                new maplibregl.TerrainControl({
+                    source: 'terrain_source',
+                    exaggeration: 1.0
+                })
+            );
+        </script>
+    </body>
+</html>

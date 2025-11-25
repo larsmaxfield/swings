@@ -1,9 +1,9 @@
 <html>
     <head>
-        <title>Latest: Zooming out pitched terrain</title>
+        <title>5.0.0: Pitched terrain at high latitude</title>
         <meta charset="utf-8"/>
-        <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" crossorigin="anonymous">
-        <script src="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.0.0/dist/maplibre-gl.css" crossorigin="anonymous">
+        <script src="https://unpkg.com/maplibre-gl@5.0.0/dist/maplibre-gl.js" crossorigin="anonymous"></script>
         <style>
             body {
                 margin: 0;
@@ -11,41 +11,28 @@
             #map {
                 height:100%; width:100%;
             }
-            #menu {
-                position: absolute;
-                top: 0;
-                left: 0;
-                background: #fff;
-                padding: 10px;
-                font-family: 'Open Sans', sans-serif;
-            }
         </style>
     </head>
     <body>
         <div id="map"></div>
-        <div id="menu">
-            <div>Set <code>renderWorldCopies</code> to:</div>
-            <div>
-                <input type="radio" id="true" name="rtoggle" value="true" checked />
-                <label for="true">true</label>
-            </div>
-            <div>
-                <input type="radio" id="false" name="rtoggle" value="false" />
-                <label for="false">false</label>
-            </div>
-        </div>
         <script type="text/javascript">
 
             const map = new maplibregl.Map({
               container: "map",
-              zoom: 0,
-              bearing: -28,
-              pitch: 70,
-              maxPitch: 85,
-              center: [0, 0],
+              zoom: 3,
+              bearing: 0,
+              pitch: 60,
+              center: [0, 90],
               style: {
                 version: 8,
                 sources: {
+                  raster_source: {
+                    type: 'raster',
+                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    attribution: '&copy; OpenStreetMap Contributors',
+                    maxzoom: 19
+                  },
                   hillshade_source: {
                     type: "raster-dem",
                       url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
@@ -60,6 +47,11 @@
                   },
                 },
                 layers: [
+                  {
+                    id: "raster",
+                    source: "raster_source",
+                    type: "raster",
+                  },
                   {
                     id: "hillshade",
                     source: "hillshade_source",
@@ -85,19 +77,6 @@
                     exaggeration: 1.0
                 })
             );
-
-            const renderOptions = document.getElementById('menu');
-            const inputs = renderOptions.getElementsByTagName('input');
-
-            function switchRenderOption(option) {
-                const status = option.target.id;
-                map.setRenderWorldCopies(status === 'true');
-                map.panTo(map.getCenter());
-            }
-
-            for (let i = 0; i < inputs.length; i++) {
-                inputs[i].onclick = switchRenderOption;
-            }
         </script>
     </body>
 </html>
