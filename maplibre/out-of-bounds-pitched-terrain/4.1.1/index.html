@@ -46,6 +46,13 @@
               style: {
                 version: 8,
                 sources: {
+                  raster_source: {
+                    type: 'raster',
+                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    attribution: '&copy; OpenStreetMap Contributors',
+                    maxzoom: 19
+                  },
                   hillshade_source: {
                     type: "raster-dem",
                       url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json',
@@ -60,6 +67,11 @@
                   },
                 },
                 layers: [
+                  {
+                    id: "raster",
+                    source: "raster_source",
+                    type: "raster",
+                  },
                   {
                     id: "hillshade",
                     source: "hillshade_source",
