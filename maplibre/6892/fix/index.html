@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Proposal fix for map not resizing on projection change</title>
+  <link rel="stylesheet" href="./maplibre-gl.css" crossorigin="anonymous">
+  <script src="./maplibre-gl.js" crossorigin="anonymous"></script>
+  <style>
+    body { margin: 0; padding: 0; }
+    html, body, #map { height: 100%; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    const map = new maplibregl.Map({
+      container: "map",
+      style: "https://demotiles.maplibre.org/style.json",
+    });
+
+    map.on("style.load", () => {
+      map.setProjection({type: "globe"});
+      map.setZoom(-2);
+    });
+    
+    map.addControl({
+      onAdd(map) {
+        const button = document.createElement("button");
+        button.textContent = "Switch to mercator";
+        button.classList.add("maplibregl-ctrl")
+        button.addEventListener("click", () => {
+          if (map.getProjection().type === "globe") {
+            button.textContent = "Reset back to globe and zoom out";
+            map.setProjection({type: "mercator"});
+          } else {
+            button.textContent = "Switch to mercator";
+            map.setProjection({type: "globe"});
+            map.setZoom(-2);
+          }
+        });
+        return button;
+      }
+    }, "top-left");
+  </script>
+</body>
+</html>
