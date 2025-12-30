@@ -1,0 +1,48 @@
+label, input {
+    font-size: 1em;
+}
+
+input[type=button] {
+    padding: 0.1em 0.4em;
+    border: 1px solid black;
+    border-radius: 0.2em;
+    --shadow-offset: 0.1em;
+    --shadow-offset-x: var(--shadow-offset);
+    --y-to-x-ratio: tan(60deg);
+    --shadow-offset-y: calc(var(--shadow-offset) * var(--y-to-x-ratio));
+    --shadow-offset-active: 0.025em;
+    --shadow-offset-active-x: var(--shadow-offset-active);
+    --shadow-offset-active-y: calc(var(--shadow-offset-active) * var(--y-to-x-ratio));
+    --translate-active: calc(var(--shadow-offset) - var(--shadow-offset-active));
+    --translate-active-x: var(--translate-active);
+    --translate-active-y: calc(var(--translate-active) * var(--y-to-x-ratio));
+    box-shadow: var(--shadow-offset-x) var(--shadow-offset-y) 0 0 rgb(223, 0, 0);
+}
+input[type=button]:hover {
+    background-color: white;
+}
+input[type=button]:active {
+    transform: translate(var(--translate-active-x), var(--translate-active-y));
+    box-shadow: var(--shadow-offset-active-x) var(--shadow-offset-active-y) 0 0 rgb(255, 0, 0);
+}
+
+.double {
+    font-size: 2rem;
+}
+
+.quadruple {
+    font-size: 4rem;
+}
+
+.buttons {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) 1fr;
+    overflow-y: visible;
+    row-gap: 1rem;
+    column-gap: 1rem;
+    align-items: center;
+}
+
+.button {
+    display: contents;
+}
