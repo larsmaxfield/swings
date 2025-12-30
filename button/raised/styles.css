@@ -4,8 +4,7 @@
 
 label, input {
     font-size: 1em;
-    margin-top: var(--shadow-offset-y);
-    margin-bottom: var(--shadow-offset-y);
+    margin-bottom: calc(1.2 * var(--shadow-offset-y));
 }
 
 input[type=button] {
@@ -44,14 +43,16 @@ input[type=button]:active {
 .buttons {
     display: grid;
     grid-template-columns: minmax(0, max-content) 1fr 0fr;
-    row-gap: 1rem;
+    row-gap: 0.2rem;
     column-gap: 1rem;
     align-items: center;
     --shadow-offset: 0.1em;
     --shadow-offset-x: var(--shadow-offset);
     --y-to-x-ratio: tan(60deg);
     --shadow-offset-y: calc(var(--shadow-offset) * var(--y-to-x-ratio));
-    overflow-x: hidden;
+    /* padding-right: 0.2em; */
+    /* padding-bottom: 0.2em; */
+    /* padding-bottom: calc(10*var(--shadow-offset)); */
 }
 
 .button {
