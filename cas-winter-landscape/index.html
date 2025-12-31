@@ -196,9 +196,9 @@
         const blackTiles = ["../data/Unknown - Mockup1/20240712_110242_stitched_cracks_mask/{z}/{y}/{x}.png"];
         
         // PMTiles, Cloudflare, Winter Landscape
-        const terrainUrl = 'pmtiles://https://pub-71d989b3685545118a21f845c49db6a3.r2.dev/paintings/winter-landscape/20241104_174121_stitched_height.pmtiles'; 
+        const terrainUrl = 'pmtiles://https://tiles.larsmaxfield.com/paintings/almond-blossom/20250107-1604/20250520_153658/height.pmtiles'; 
         const terrainUrl_viridis = terrainUrl;        
-        const RGBUrl = 'pmtiles://https://pub-71d989b3685545118a21f845c49db6a3.r2.dev/paintings/winter-landscape/20241104_174121_stitched_rgb.pmtiles';
+        const RGBUrl = 'pmtiles://https://tiles.larsmaxfield.com/paintings/almond-blossom/20250107-1604/20250520_153658/rgb.pmtiles';
         const heightUrl = terrainUrl;
 
         // https://github.com/protomaps/PMTiles/blob/main/js/examples/maplibre.html
@@ -460,7 +460,7 @@
                         source: 'elevationSource',
                         paint: {
                             'elevation-colormap-breakpoint-low': 10000,  // 14000 appx data min
-                            'elevation-colormap-breakpoint-high': 27000,  // 45000 appx data max
+                            'elevation-colormap-breakpoint-high': 60000,  // 45000 appx data max
                             'elevation-colormap-function': viridisShaderFunction,
                             'elevation-colormap-lowcutoff': 1,
                             'elevation-colormap-lowcutoff-color': '#000000',
@@ -505,8 +505,8 @@
             this.container.className = 'slider-container';
             this.container.innerHTML = `
             <div class="slider-track"></div>
-            <input type="range" min="1" max="40960" value="10000" id="slider-1" oninput="slideOne()">
-            <input type="range" min="2" max="40961" value="27000" id="slider-2" oninput="slideTwo()">
+            <input type="range" min="1" max="119999" value="10000" id="slider-1" oninput="slideOne()">
+            <input type="range" min="2" max="120000" value="60000" id="slider-2" oninput="slideTwo()">
             <div class="slider-markers">
                 <div style="left: 0%;"><span>0mm</span></div>
                 <div style="left: 10%;"><span></span></div>
