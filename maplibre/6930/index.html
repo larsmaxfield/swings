@@ -63,8 +63,9 @@
         <td><select name="max-bounds-select" id="max-bounds-select">
             <option value="undefined">World (undefined)</option>
             <option value="trans-meridian">Fiji (trans-meridian)</option>
-            <option value="trans-equatorial-americas">Americas (trans-equatorial)</option>
             <option value="trans-equatorial-africa">Africa (trans-equatorial)</option>
+            <option value="projection-transition-eindhoven">Eindhoven (issue at zoom 11–12)</option>
+            <option value="trans-equatorial-americas">Americas (trans-equatorial)</option>
         </select></td>
     </tr>
     <tr><td><label for='zoom-out'>Zoom out on change</label></td><td><input type='checkbox' id='zoom-out'/></td></tr>
@@ -101,7 +102,14 @@
         },
     });
 
-    new GeoGrid({ map });
+    map.addControl(
+        new maplibregl.NavigationControl({
+            showZoom: true,
+            showCompass: true
+        })
+    );
+
+    // new GeoGrid({ map });
 
     // Fiji (trans-meridian)
     const f_north = -12;
@@ -127,6 +135,14 @@
     const a_bounds = [[a_west, a_south], [a_east, a_north]];
     const a_center = [(a_west + a_east) / 2, (a_north + a_south) / 2]
 
+    // Eindhoven (transition issue zoom 11-12)
+    const e_north = 51.7;
+    const e_east = 5.6;
+    const e_south = 51.1;
+    const e_west = 5.0;
+    const e_bounds = [[e_west, e_south], [e_east, e_north]];
+    const e_center = [(e_west + e_east) / 2, (e_north + e_south) / 2]
+
     const bounds_options = {
         "undefined": {
             "bounds": undefined, "center": [0, 0]
@@ -139,6 +155,9 @@
         },
         "trans-equatorial-africa": {
             "bounds": a_bounds, "center": a_center
+        },
+        "projection-transition-eindhoven": {
+            "bounds": e_bounds, "center": e_center
         },
     }
 
@@ -209,7 +228,7 @@
             'type': 'line',
             'source': 'trans-equatorial-americas',
             'paint': {
-                'line-color': '#00ff00',
+                'line-color': '#FFA500',
                 'line-width': 4,
                 'line-offset': -2,
             }
@@ -237,6 +256,33 @@
             'source': 'trans-equatorial-africa',
             'paint': {
                 'line-color': '#0000ff',
+                'line-width': 4,
+                'line-offset': -2,
+            }
+        });
+        map.addSource('projection-transition-eindhoven', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': [
+                        [e_west, e_south],
+                        [e_west, e_north],
+                        [e_east, e_north],
+                        [e_east, e_south],
+                        [e_west, e_south],
+                    ]
+                }
+            }
+        });
+        map.addLayer({
+            'id': 'projection-transition-eindhoven',
+            'type': 'line',
+            'source': 'projection-transition-eindhoven',
+            'paint': {
+                'line-color': '#ff00ff',
                 'line-width': 4,
                 'line-offset': -2,
             }
