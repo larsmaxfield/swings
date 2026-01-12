@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <title>Globe vs Mercator maxBounds</title>
+    <meta property='og:description' content='Globe vs Mercator maxBounds' />
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' href='./maplibre-gl.css' />
+    <script src='./maplibre-gl.js'></script>
+    <link href="https://unpkg.com/geogrid-maplibre-gl@latest/dist/geogrid.css" rel="stylesheet" />
+    <style>
+        h1 {
+            font-size: 1rem;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        html, body, #map { height: 100%; }
+        .listing-group {
+            font-family: 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            background-color: #fff;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        #options {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+        h1 {
+            margin: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+<div id='map'></div>
+<table id='options' class='listing-group'>
+    <tr><th scope="col" colspan="100%">
+        <h1>
+            maxBounds Globe (<a href="https://github.com/maplibre/maplibre-gl-js/pull/6930" target="_top">pull request</a>)
+        </h1>
+    </th></tr>
+    <tr>
+        <td colspan="100%">
+        <form>
+        <fieldset id="projection-type-fieldset">
+            <legend>Projection type:</legend>
+            <div>
+            <input type="radio" id="globe-radio" name="projection-type-radio" value="globe" checked />
+            <label for="globe-radio">Globe</label>
+
+            <input type="radio" id="mercator-radio" name="projection-type-radio" value="mercator" />
+            <label for="mercator-radio">Mercator</label>
+
+            <input type="radio" id="vertical-perspective-radio" name="projection-type-radio" value="vertical-perspective" />
+            <label for="vertical-perspective-radio">Vertical Perspective</label>
+            </div>
+        </fieldset>
+        </form></td>
+    </tr>
+    <tr><td><label for='max-bounds-select'>Max bounds</label></td>
+        <td><select name="max-bounds-select" id="max-bounds-select">
+            <option value="undefined">World (undefined)</option>
+            <option value="trans-meridian">Fiji (trans-meridian)</option>
+            <option value="trans-equatorial-africa">Africa (trans-equatorial)</option>
+            <option value="projection-transition-eindhoven">Eindhoven (issue at zoom 11–12)</option>
+            <option value="trans-equatorial-americas">Americas (trans-equatorial)</option>
+        </select></td>
+    </tr>
+    <tr><td><label for='zoom-out'>Zoom out on change</label></td><td><input type='checkbox' id='zoom-out'/></td></tr>
+    <tr><td><label for='set-center'>Set center on change</label></td><td><input type='checkbox' id='set-center'/></td></tr>
+</table>
+
+<script type="module">
+    import { GeoGrid } from 'https://unpkg.com/geogrid-maplibre-gl';
+
+    const wayOut = 1;
+
+    const map = new maplibregl.Map({
+        container: 'map',
+        hash: true,
+        zoom: wayOut,
+        style: {
+            version: 8,
+            sources: {
+                rgb: {
+                    type: 'raster',
+                    tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                    tileSize: 256,
+                    attribution: '&copy; OpenStreetMap Contributors',
+                    maxzoom: 19
+                },
+            },
+            layers: [
+                {
+                    id: 'rgb',
+                    type: 'raster',
+                    source: 'rgb'
+                },
+            ]
+        },
+    });
+
+    map.addControl(
+        new maplibregl.NavigationControl({
+            showZoom: true,
+            showCompass: true
+        })
+    );
+
+    // new GeoGrid({ map });
+
+    // Fiji (trans-meridian)
+    const f_north = -12;
+    const f_east = -175;
+    const f_south = -23;
+    const f_west = 175;
+    const f_bounds = [[f_west, f_south], [f_east, f_north]];
+    const f_center = [(f_west + f_east) / 2, (f_north + f_south) / 2]
+    
+    // Americas (trans-equator)
+    const am_north = 72;
+    const am_east = -34;
+    const am_south = -56;
+    const am_west = -169;
+    const am_bounds = [[am_west, am_south], [am_east, am_north]];
+    const am_center = [(am_west + am_east) / 2, (am_north + am_south) / 2]
+
+    // Africa (trans-equator)
+    const a_north = 38;
+    const a_east = 52;
+    const a_south = -36;
+    const a_west = -19;
+    const a_bounds = [[a_west, a_south], [a_east, a_north]];
+    const a_center = [(a_west + a_east) / 2, (a_north + a_south) / 2]
+
+    // Eindhoven (transition issue zoom 11-12)
+    const e_north = 51.7;
+    const e_east = 5.6;
+    const e_south = 51.1;
+    const e_west = 5.0;
+    const e_bounds = [[e_west, e_south], [e_east, e_north]];
+    const e_center = [(e_west + e_east) / 2, (e_north + e_south) / 2]
+
+    const bounds_options = {
+        "undefined": {
+            "bounds": undefined, "center": [0, 0]
+        },
+        "trans-meridian": {
+            "bounds": f_bounds, "center": f_center
+        },
+        "trans-equatorial-americas": {
+            "bounds": am_bounds, "center": am_center
+        },
+        "trans-equatorial-africa": {
+            "bounds": a_bounds, "center": a_center
+        },
+        "projection-transition-eindhoven": {
+            "bounds": e_bounds, "center": e_center
+        },
+    }
+
+    const zeroPad = (num, places) => String(num).padStart(places, '0');
+
+    function selectMaxBoundsFromUi() {
+        const option = document.getElementById('max-bounds-select').value;
+        map.setMaxBounds(bounds_options[option].bounds);
+        if (document.getElementById('set-center').checked) map.setCenter(bounds_options[option].center);
+        if (document.getElementById('zoom-out').checked) map.setZoom(wayOut);
+    }
+
+    function selectProjectionTypeFromUi() {
+        const option = document.querySelector('input[name=projection-type-radio]:checked').value;
+        map.setProjection({type: option});
+        // const max_bounds_option = document.getElementById('max-bounds-select').value;
+        // map.setCenter(bounds_options[max_bounds_option].center)
+        // map.setZoom(wayOut);
+    };
+
+    map.on('load', () => {
+        map.addSource('trans-meridian', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': [
+                        [f_west, f_south],
+                        [f_west, f_north],
+                        [f_east+360, f_north],
+                        [f_east+360, f_south],
+                        [f_west, f_south],
+                    ]
+                }
+            }
+        });
+        map.addLayer({
+            'id': 'trans-meridian',
+            'type': 'line',
+            'source': 'trans-meridian',
+            'paint': {
+                'line-color': '#ff0000',
+                'line-width': 4,
+                'line-offset': -2,
+            }
+        });
+        map.addSource('trans-equatorial-americas', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': [
+                        [am_west, am_south],
+                        [am_west, am_north],
+                        [am_east, am_north],
+                        [am_east, am_south],
+                        [am_west, am_south],
+                    ]
+                }
+            }
+        });
+        map.addLayer({
+            'id': 'trans-equatorial-americas',
+            'type': 'line',
+            'source': 'trans-equatorial-americas',
+            'paint': {
+                'line-color': '#FFA500',
+                'line-width': 4,
+                'line-offset': -2,
+            }
+        });
+        map.addSource('trans-equatorial-africa', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': [
+                        [a_west, a_south],
+                        [a_west, a_north],
+                        [a_east, a_north],
+                        [a_east, a_south],
+                        [a_west, a_south],
+                    ]
+                }
+            }
+        });
+        map.addLayer({
+            'id': 'trans-equatorial-africa',
+            'type': 'line',
+            'source': 'trans-equatorial-africa',
+            'paint': {
+                'line-color': '#0000ff',
+                'line-width': 4,
+                'line-offset': -2,
+            }
+        });
+        map.addSource('projection-transition-eindhoven', {
+            'type': 'geojson',
+            'data': {
+                'type': 'Feature',
+                'properties': {},
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': [
+                        [e_west, e_south],
+                        [e_west, e_north],
+                        [e_east, e_north],
+                        [e_east, e_south],
+                        [e_west, e_south],
+                    ]
+                }
+            }
+        });
+        map.addLayer({
+            'id': 'projection-transition-eindhoven',
+            'type': 'line',
+            'source': 'projection-transition-eindhoven',
+            'paint': {
+                'line-color': '#ff00ff',
+                'line-width': 4,
+                'line-offset': -2,
+            }
+        });
+        document.getElementById('projection-type-fieldset').addEventListener('change', selectProjectionTypeFromUi);
+        selectProjectionTypeFromUi();
+        document.getElementById('max-bounds-select').addEventListener('change', selectMaxBoundsFromUi);
+        selectMaxBoundsFromUi();
+    });
+</script>
+</body>
+</html>
