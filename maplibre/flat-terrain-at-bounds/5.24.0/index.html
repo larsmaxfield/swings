@@ -8,23 +8,33 @@
             body {
                 margin: 0;
             }
-            #map {
-                height:100%;
-                width:100%;
+            * {
+                box-sizing: border-box;
+            }
+            .wrapper {
                 display: grid;
+                width: 100%;
+            }
+            #map {
+                aspect-ratio: 1 / 1;
+                place-self: center;
+                height: 100%;
+                max-width: 100%;
+                border: 1px solid CanvasText;
                 .instruct {
-                    font-size: 3rem;
+                    font-size: 2rem;
                     line-height: 1em;
                 }
             }
         </style>
     </head>
     <body>
-        <div id="map">
-            <div class="instruct">
-                Zoom in/out:
-                <br>
-                Terrain appears/flattens when pitched and centered against bounds
+        <div class="wrapper">
+            <div id="map">
+                <div class="instruct">
+                    <p>Zoom in/out:</p>
+                    <p>Terrain appears/flattens when pitched and centered against bounds</p>
+                </div>
             </div>
         </div>
         <script>
