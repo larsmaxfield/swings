@@ -1,0 +1,63 @@
+<html>
+    <head>
+        <title>@6.14.0: Flat terrain at bounds</title>
+        <meta charset="utf-8"/>
+        <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.14.0/dist/maplibre-gl.css" crossorigin="anonymous">
+        <style>
+            body {
+                margin: 0;
+            }
+            #map {
+                height:100%;
+                width:100%;
+                display: grid;
+                .instruct {
+                    place-self: center;
+                    font-size: 3rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map">
+            <div class="instruct">Zoom out: Flat terrain</span>
+        </div>
+        <script type="module">
+            import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.14.0/dist/maplibre-gl.mjs';
+
+            const map = new maplibregl.Map({
+                container: 'map',
+                zoom: 1.65,
+                center: [0, -85],
+                pitch: 70,
+                hash: true,
+                style: {
+                    version: 8,
+                    sources: {
+                        terrainSource: {
+                            type: 'raster-dem',
+                            url: 'https://tiles.mapterhorn.com/tilejson.json'
+                        },
+                        hillshadeSource: {
+                            type: 'raster-dem',
+                            url: 'https://tiles.mapterhorn.com/tilejson.json'
+                        }
+                    },
+                    layers: [
+                        {
+                            id: 'hills',
+                            type: 'hillshade',
+                            source: 'hillshadeSource',
+                            layout: {visibility: 'visible'},
+                            paint: {'hillshade-shadow-color': '#473B24'}
+                        }
+                    ],
+                    terrain: {
+                        source: 'terrainSource',
+                        exaggeration: 200
+                    },
+                },
+            });
+        </script>
+    </body>
+</html>
