@@ -5,17 +5,17 @@
         <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.14.0/dist/maplibre-gl.css" crossorigin="anonymous">
         <style>
             body {
+                container-type: size;
                 margin: 0;
                 display: grid;
+                place-items: center;
             }
             * {
                 box-sizing: border-box;
             }
             #map {
-                aspect-ratio: 1 / 1;
-                place-self: center;
-                max-height: 100%;
-                max-width: 100%;
+                width: min(100cqw, 100cqh);
+                height: min(100cqw, 100cqh);
                 border: 1px solid CanvasText;
                 .instruct {
                     font-size: 2rem;
