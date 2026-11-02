@@ -42,7 +42,8 @@
                 minZoom: -Infinity,
                 center: [0, 90],
                 hash: true,
-                transformConstrain: (lngLat, zoom) => {return {center: lngLat, zoom: zoom ?? 0}},
+                // renderWorldCopies: false,
+                // transformConstrain: (lngLat, zoom) => {return {center: lngLat, zoom: zoom ?? 0}},
                 style: {
                     version: 8,
                     projection: {type: "identity"},
