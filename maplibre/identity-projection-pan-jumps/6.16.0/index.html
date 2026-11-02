@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>@6.16.0: Map jumps when panning identity-projection map outside latitude bounds</title>
+        <meta charset="utf-8"/>
+        <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css" crossorigin="anonymous">
+        <style>
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                font-size: unset;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            #map {
+                width: min(100cqw, 100cqh);
+                height: min(100cqw, 100cqh);
+                border: 1px solid CanvasText;
+                background: repeating-conic-gradient(#000 0 25%, #444 0 50%) 50% / 32px 32px;
+                .instruct {
+                    color: white;
+                    font-size: 2rem;
+                    line-height: 1em;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map">
+            <div class="instruct">
+                <h1>Map jumps when panning identity-projection map outside latitude bounds</h1>
+                <p>Click the area above the map and drag. The map jumps.</p>
+            </div>
+        </div>
+        <script type="module">
+            import * as maplibregl from 'https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs';
+
+            const map = new maplibregl.Map({
+                container: 'map',
+                zoom: -2,
+                minZoom: -Infinity,
+                center: [0, 90],
+                hash: true,
+                transformConstrain: (lngLat, zoom) => {return {center: lngLat, zoom: zoom ?? 0}},
+                style: {
+                    version: 8,
+                    projection: {type: "identity"},
+                    sources: {
+                        rgb: {
+                            type: 'raster',
+                            tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                            tileSize: 256,
+                            attribution: '&copy; OpenStreetMap Contributors',
+                            maxzoom: 19
+                        },
+                    },
+                    layers: [{id: 'rgb', type: 'raster', source: 'rgb'}]
+                },
+            });
+        </script>
+    </body>
+</html>
